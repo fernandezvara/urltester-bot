@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/asdine/storm"
-	"github.com/asdine/storm/q"
 	"github.com/fernandezvara/scheduler"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
@@ -24,6 +23,7 @@ func (u *urlTester) start() error {
 		err error
 	)
 
+	log.Println("Starting API ...")
 	// set up database
 	u.db, err = storm.Open(u.dbpath)
 	u.db.Init(&history{})
@@ -59,11 +59,11 @@ func (u *urlTester) start() error {
 	go func() {
 		for sig := range ch {
 			// sig is a ^C, handle it
-			fmt.Println("Interrupt request received:", sig.String())
+			log.Println("Interrupt request received:", sig.String())
 			u.db.Close() // stopping database gratefully
-			fmt.Println("db closed")
+			log.Println("db closed")
 			u.bot.Stop() // stopping bot gratefully
-			fmt.Println("bot closed")
+			log.Println("bot closed")
 			os.Exit(0)
 		}
 	}()
@@ -84,243 +84,9 @@ func (u *urlTester) start() error {
 		u.Unlock()
 	}
 
+	log.Println("Starting Bot ...")
 	u.bot.Start()
 	return nil
-
-}
-
-// addJob adds a job the the scheduler,
-// TODO: for update a scheduled job, first delete and recreate, the ID will remain the same
-func (u *urlTester) addJob(sched schedule) error {
-
-	var (
-		err    error
-		amount int
-		unit   string
-		job    *scheduler.Job
-	)
-
-	u.Lock()
-	amount, unit, _ = evaluateTimeExp(sched.Every)
-	job, err = newScheduledJob(amount, unit).NotImmediately().RunWithArgs(u.executeMonitor, []string{strconv.Itoa(sched.ID), sched.Method, sched.URL, strconv.Itoa(sched.ExpectedStatus)})
-	if err != nil {
-		return err
-	}
-	u.schedules[sched.ID] = job
-	log.Println("job added", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, sched.Every)
-	u.Unlock()
-
-	return nil
-}
-
-// saveHistory stores on the database the user interaction
-func (u *urlTester) saveHistory(m *tb.Message) {
-	u.db.Save(&history{
-		When:    time.Now(),
-		UserID:  m.Sender.ID,
-		Message: m.Text,
-	})
-}
-
-func (u *urlTester) help(m *tb.Message) {
-	if !m.Private() {
-		return
-	}
-
-	u.bot.Send(m.Sender, `/monitors - returns defined monitors
-/newmonitor <method> <url> <expected_http_status> <interval> <private> - Adds a new monitor
-/subscribe <id> - subscribes you to the desired monitor
-/unsubscribe <id> - removes a subscription
-/test <method> <url> <expected_http_status> - Send a test request for an URL
-/testfull - Sends a test request and returns the body
-/history - returns your command history
-/help - this text
-`)
-}
-
-func (u *urlTester) hello(m *tb.Message) {
-	if !m.Private() {
-		return
-	}
-	u.saveHistory(m)
-	fmt.Println(m.Sender)
-
-	u.bot.Send(m.Sender, "hello world")
-}
-
-func (u *urlTester) monitors(m *tb.Message) {
-
-	if !m.Private() {
-		return
-	}
-	u.saveHistory(m)
-
-	query := u.db.Select(q.Or(
-		q.And(q.Eq("UserID", m.Sender.ID), q.Eq("Private", true)),
-		q.And(q.Eq("Private", false)),
-	))
-
-	var (
-		scheds  []schedule
-		message string
-		err     error
-	)
-
-	err = query.Find(&scheds)
-	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
-		return
-	}
-
-	for _, sched := range scheds {
-		if sched.UserID == m.Sender.ID {
-			message = fmt.Sprintf("%s%d - %s %s (%d) (yours)", message, sched.ID, sched.Method, sched.URL, sched.ExpectedStatus)
-		} else {
-			message = fmt.Sprintf("%s%d - %s %s (%d)", message, sched.ID, sched.Method, sched.URL, sched.ExpectedStatus)
-		}
-		if alreadyOnIntArray(sched.Subscriptors, m.Sender.ID) == true {
-			message = fmt.Sprintf("%s (subscribed)", message)
-		}
-		message = fmt.Sprintf("%s\n", message)
-	}
-
-	u.bot.Send(m.Sender, message, tb.NoPreview)
-}
-
-func (u *urlTester) newmonitor(m *tb.Message) {
-
-	var (
-		sched schedule
-	)
-
-	if !m.Private() {
-		return
-	}
-	u.saveHistory(m)
-
-	// verify format
-	method, url, interval, private, expectedStatus, err := u.cleanPayload(m.Payload, true)
-	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
-		return
-	}
-
-	// monitor exists? look for the private urls of the current user or public ones
-	query := u.db.Select(q.Or(
-		q.And(q.Eq("UserID", m.Sender.ID), q.Eq("Method", method), q.Eq("URL", url), q.Eq("Private", true)),
-		q.And(q.Eq("Method", method), q.Eq("URL", url), q.Eq("Private", false)),
-	))
-
-	var scheds []schedule
-	err = query.Find(&scheds)
-	if err != nil && err != storm.ErrNotFound { // not found is not an error but the desired state
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
-		return
-	}
-
-	if len(scheds) > 0 {
-		u.bot.Send(m.Sender, "Error:\nMethod and URL is already monitored.")
-		var message string
-		for _, s := range scheds {
-			if s.UserID == m.Sender.ID {
-				message = fmt.Sprintf("%s%d - %s %s (%d) (yours)\n", message, s.ID, s.Method, s.URL, s.ExpectedStatus)
-			} else {
-				message = fmt.Sprintf("%s%d - %s %s (%d)\n", message, s.ID, s.Method, s.URL, s.ExpectedStatus)
-			}
-		}
-		u.bot.Send(m.Sender, message, tb.NoPreview)
-		return
-	}
-
-	// insert in db
-	sched.UserID = m.Sender.ID
-	sched.Private = private
-	sched.Method = method
-	sched.URL = url
-	sched.ExpectedStatus = expectedStatus
-	sched.Every = interval
-	sched.Subscriptors = []int{m.Sender.ID}
-
-	err = u.db.Save(&sched)
-	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
-		return
-	}
-
-	fmt.Println("sched")
-	fmt.Println(sched)
-
-	// create scheduled task
-	err = u.addJob(sched)
-	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
-		return
-	}
-
-	fmt.Println(m.Sender)
-	u.bot.Send(m.Sender, "Monitor added.")
-
-}
-
-func (u *urlTester) subscribe(m *tb.Message) {
-
-	var (
-		sched   schedule
-		message string
-		err     error
-	)
-
-	sched, message = u.getScheduleByIDString(m.Payload)
-	if message != "" {
-		u.bot.Send(m.Sender, message, tb.NoPreview)
-		return
-	}
-
-	if alreadyOnIntArray(sched.Subscriptors, m.Sender.ID) {
-		u.bot.Send(m.Sender, "Already subscribed.")
-		return
-	}
-
-	sched.Subscriptors = append(sched.Subscriptors, m.Sender.ID)
-
-	err = u.db.Save(&sched)
-	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
-		return
-	}
-
-	u.bot.Send(m.Sender, "Successfully subscribed.")
-
-}
-
-func (u *urlTester) unsubscribe(m *tb.Message) {
-
-	var (
-		sched   schedule
-		message string
-		err     error
-	)
-
-	sched, message = u.getScheduleByIDString(m.Payload)
-	if message != "" {
-		u.bot.Send(m.Sender, message, tb.NoPreview)
-		return
-	}
-
-	if alreadyOnIntArray(sched.Subscriptors, m.Sender.ID) {
-		// remove from array
-		sched.Subscriptors = removeFromIntArray(sched.Subscriptors, m.Sender.ID)
-		err = u.db.Save(&sched)
-		if err != nil {
-			u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
-			return
-		}
-		u.bot.Send(m.Sender, "Unsubscribed.")
-		return
-
-	}
-
-	u.bot.Send(m.Sender, "Not subscribed to the requested monitor.")
 
 }
 
@@ -358,153 +124,6 @@ func (u *urlTester) getScheduleByIDString(idString string) (sched schedule, mess
 	return
 }
 
-func alreadyOnIntArray(arr []int, value int) bool {
-	for _, v := range arr {
-		if v == value {
-			return true
-		}
-	}
-	return false
-}
-
-func removeFromIntArray(arr []int, value int) (newArr []int) {
-
-	for _, v := range arr {
-		if v != value {
-			newArr = append(newArr, v)
-		}
-	}
-	return
-}
-
-func (u *urlTester) executeMonitor(args []string) {
-
-	var (
-		id               int
-		method           string
-		urlString        string
-		statusCode       int
-		resultStatusCode int
-		expected         bool
-		err              error
-		sched            schedule
-		diff             int64
-	)
-
-	id, err = strconv.Atoi(args[0])
-	if err != nil {
-		log.Println("ERROR: Unexpected Status code. Monitor called with these args:\n", args)
-		return
-	}
-	method = args[1]
-	urlString = args[2]
-	statusCode, err = strconv.Atoi(args[3])
-	if err != nil {
-		log.Println("ERROR: Unexpected Status code. Monitor called with these args:\n", args)
-		return
-	}
-
-	err = u.db.One("ID", id, &sched)
-	if err != nil {
-		log.Println("ERROR: Unexpected Status code. Monitor called with these args:\n", args)
-		return
-	}
-
-	if len(sched.Subscriptors) == 0 {
-		log.Println("no subscriptors", expected, err, args)
-		return
-	}
-
-	_, _, resultStatusCode, expected, err = u.sendRequest(method, urlString, statusCode)
-
-	if expected {
-		if u.lastStatus[sched.ID].Status != statusUp {
-			diff, err = u.addTimelineEntry(sched.ID, statusUp)
-			fmt.Println(diff, err)
-			for _, sub := range sched.Subscriptors {
-				u.bot.Send(telegramUser{id: sub}, fmt.Sprintf("RESOLVED: %s %s (%d):\n\nDowntime: %s\n", sched.Method, sched.URL, sched.ExpectedStatus, secondsToHuman(diff)), tb.NoPreview)
-			}
-		}
-	} else {
-		if u.lastStatus[sched.ID].Status != statusDown {
-			_, err = u.addTimelineEntry(sched.ID, statusDown)
-			for _, sub := range sched.Subscriptors {
-				u.bot.Send(telegramUser{id: sub}, fmt.Sprintf("PROBLEM: (id:%d) %s %s (%d):\nrc: %d", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, resultStatusCode), tb.NoPreview)
-			}
-			return
-		}
-
-		fmt.Println(time.Now().Unix()-u.lastStatus[sched.ID].Timestamp, secondsToHuman(time.Now().Unix()-u.lastStatus[sched.ID].Timestamp))
-		for _, sub := range sched.Subscriptors {
-			u.bot.Send(telegramUser{id: sub}, fmt.Sprintf("PROBLEM: (id:%d) %s %s (%d):\nrc: %d\nDowntime: %s\n", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, resultStatusCode, secondsToHuman(time.Now().Unix()-u.lastStatus[sched.ID].Timestamp)), tb.NoPreview)
-		}
-	}
-
-}
-
-// addTimelineEntry adds a new entry to the timeline based on the last timestamp
-func (u *urlTester) addTimelineEntry(id, status int) (diff int64, err error) {
-
-	var (
-		entry timeline
-	)
-
-	entry.MonitorID = id
-	entry.Status = status
-	entry.Timestamp = time.Now().Unix()
-
-	if status == statusUp {
-		entry.Downtime = entry.Timestamp - u.lastStatus[id].Timestamp
-		diff = entry.Downtime
-	}
-
-	err = u.db.Save(&entry)
-
-	u.Lock()
-	u.lastStatus[id] = entry
-	u.Unlock()
-
-	return
-}
-
-// getLastTimelineEntry returns the last entry or a fake one to ensure one will be created
-func (u *urlTester) getLastTimelineEntry(id int) (entry timeline) {
-
-	var err error
-
-	// get the last timeline entry for the monitor
-	var entries []timeline
-	err = u.db.Select(q.Eq("MonitorID", id)).OrderBy("Timestamp").Limit(1).Reverse().Find(&entries)
-	if len(entries) == 1 {
-		entry = entries[0]
-	}
-
-	if err != nil {
-		// create a new fake entry
-		entry = timeline{
-			MonitorID: id,
-			Timestamp: time.Now().Unix(),
-		}
-	}
-
-	return
-}
-
-func newScheduledJob(amount int, unit string) *scheduler.Job {
-
-	var this *scheduler.Job
-	switch unit {
-	case "s", "S":
-		this = scheduler.Every(amount).Seconds()
-	case "m", "M":
-		this = scheduler.Every(amount).Minutes()
-	case "h", "H":
-		this = scheduler.Every(amount).Hours()
-	}
-	return this
-
-}
-
 // evaluateTimeExp verifies that the expression to evaluate meets the requirements
 // time expressions:
 // (n)s = n seconds
@@ -530,50 +149,6 @@ func evaluateTimeExp(exp string) (int, string, bool) {
 		}
 	}
 	return 0, "", false
-
-}
-
-func (u *urlTester) test(m *tb.Message) {
-	u.testURL(m, false)
-}
-
-func (u *urlTester) testFull(m *tb.Message) {
-	u.testURL(m, true)
-}
-
-func (u *urlTester) testURL(m *tb.Message, full bool) {
-
-	var (
-		headerString string
-		message      string
-	)
-
-	if !m.Private() {
-		return
-	}
-	u.saveHistory(m)
-
-	method, urlString, _, _, expectedStatus, err := u.cleanPayload(m.Payload, false)
-	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
-	}
-
-	body, headers, resultCode, expected, err := u.sendRequest(method, urlString, expectedStatus)
-	fmt.Println(method, urlString, expectedStatus, resultCode, expected, err)
-	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
-		return
-	}
-
-	headerString = headersToString(headers)
-
-	if full {
-		message = fmt.Sprintf("Expected result: %t\n\nhttp status: %d\n\nHeaders:\n%s\n\nBody:\n%s\n", expected, resultCode, headerString, body)
-	} else {
-		message = fmt.Sprintf("Expected result: %t\n\nhttp status: %d\n\nHeaders:\n%s\n", expected, resultCode, headerString)
-	}
-
-	u.bot.Send(m.Sender, message)
 
 }
 
@@ -630,44 +205,6 @@ func (u *urlTester) cleanPayload(payload string, isSchedule bool) (method, url, 
 
 }
 
-func (u *urlTester) methodAllowed(method string) bool {
-	for _, m := range allowedMethods {
-		if method == m {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (u *urlTester) history(m *tb.Message) {
-
-	var (
-		err       error
-		histories []history
-		message   string
-	)
-
-	if !m.Private() {
-		return
-	}
-
-	message = "-- History --\n"
-	err = u.db.Find("UserID", m.Sender.ID, &histories)
-	if err != nil {
-		u.bot.Send(m.Sender, "there was an error retrieving information")
-		u.bot.Send(m.Sender, err.Error())
-		return
-	}
-
-	for _, h := range histories {
-		message = fmt.Sprintf("%s%s - %s\n", message, h.When.Format("02/01/2006 15:04:05"), h.Message)
-	}
-
-	u.bot.Send(m.Sender, message, tb.NoPreview)
-
-}
-
 func (u *urlTester) sendRequest(method, url string, expectedStatus int) (body string, headers map[string]string, httpStatus int, expected bool, err error) {
 
 	var (
@@ -680,7 +217,7 @@ func (u *urlTester) sendRequest(method, url string, expectedStatus int) (body st
 	headers = make(map[string]string)
 
 	client = &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 2 * time.Minute,
 	}
 
 	req, err = http.NewRequest(strings.ToUpper(method), url, nil)

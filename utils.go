@@ -65,3 +65,32 @@ func secondsToHuman(input int64) (result string) {
 
 	return
 }
+
+func alreadyOnIntArray(arr []int, value int) bool {
+	for _, v := range arr {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
+func removeFromIntArray(arr []int, value int) (newArr []int) {
+
+	for _, v := range arr {
+		if v != value {
+			newArr = append(newArr, v)
+		}
+	}
+	return
+}
+
+func (u *urlTester) methodAllowed(method string) bool {
+	for _, m := range allowedMethods {
+		if method == m {
+			return true
+		}
+	}
+
+	return false
+}
