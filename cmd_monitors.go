@@ -31,7 +31,6 @@ func (u *urlTester) summary(m *tb.Message) {
 
 	var (
 		scheds  []schedule
-		status  string
 		message string
 		diff    int64
 		err     error
@@ -44,17 +43,13 @@ func (u *urlTester) summary(m *tb.Message) {
 	}
 
 	for _, sched := range scheds {
-
 		if alreadyOnIntArray(sched.Subscriptors, m.Sender.ID) {
 			diff = time.Now().Unix() - u.lastStatus[sched.ID].Timestamp
-			status = statusText(u.lastStatus[sched.ID].Status)
-			message = fmt.Sprintf("%s%d - %s %s (%d)\n%s for %s\n", message, sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, status, secondsToHuman(diff))
+			message = fmt.Sprintf("%s*%d* - %s [%s] (%d)\n*%s* for %s\n\n", message, sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, statusText(u.lastStatus[sched.ID].Status), secondsToHuman(diff))
 		}
-
-		message = fmt.Sprintf("%s\n", message)
 	}
 
-	u.bot.Send(m.Sender, message, tb.NoPreview)
+	u.bot.Send(m.Sender, message, tb.NoPreview, tb.ModeMarkdown)
 
 }
 
@@ -81,17 +76,17 @@ func (u *urlTester) monitors(m *tb.Message) {
 
 	for _, sched := range scheds {
 		if sched.UserID == m.Sender.ID {
-			message = fmt.Sprintf("%s%d - %s %s (%d) (yours)", message, sched.ID, sched.Method, sched.URL, sched.ExpectedStatus)
+			message = fmt.Sprintf("%s%d - %s [%s] (%d) *(yours)*", message, sched.ID, sched.Method, sched.URL, sched.ExpectedStatus)
 		} else {
-			message = fmt.Sprintf("%s%d - %s %s (%d)", message, sched.ID, sched.Method, sched.URL, sched.ExpectedStatus)
+			message = fmt.Sprintf("%s%d - %s [%s] (%d)", message, sched.ID, sched.Method, sched.URL, sched.ExpectedStatus)
 		}
 		if alreadyOnIntArray(sched.Subscriptors, m.Sender.ID) == true {
-			message = fmt.Sprintf("%s (subscribed)", message)
+			message = fmt.Sprintf("%s *(subscribed)*", message)
 		}
 		message = fmt.Sprintf("%s\n", message)
 	}
 
-	u.bot.Send(m.Sender, message, tb.NoPreview)
+	u.bot.Send(m.Sender, message, tb.NoPreview, tb.ModeMarkdown)
 
 }
 
@@ -131,12 +126,12 @@ func (u *urlTester) newmonitor(m *tb.Message) {
 		var message string
 		for _, s := range scheds {
 			if s.UserID == m.Sender.ID {
-				message = fmt.Sprintf("%s%d - %s %s (%d) (yours)\n", message, s.ID, s.Method, s.URL, s.ExpectedStatus)
+				message = fmt.Sprintf("%s%d - %s [%s] (%d) *(yours)*\n", message, s.ID, s.Method, s.URL, s.ExpectedStatus)
 			} else {
-				message = fmt.Sprintf("%s%d - %s %s (%d)\n", message, s.ID, s.Method, s.URL, s.ExpectedStatus)
+				message = fmt.Sprintf("%s%d - %s [%s] (%d)\n", message, s.ID, s.Method, s.URL, s.ExpectedStatus)
 			}
 		}
-		u.bot.Send(m.Sender, message, tb.NoPreview)
+		u.bot.Send(m.Sender, message, tb.NoPreview, tb.ModeMarkdown)
 		return
 	}
 

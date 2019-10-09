@@ -17,6 +17,12 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+func collector(err error) {
+	log.Println("-- err:")
+	log.Println(err)
+	log.Println("-- err:")
+}
+
 func (u *urlTester) start() error {
 
 	var (
@@ -35,8 +41,9 @@ func (u *urlTester) start() error {
 
 	// set up bot
 	u.bot, err = tb.NewBot(tb.Settings{
-		Token:  u.token,
-		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
+		Token:    u.token,
+		Poller:   &tb.LongPoller{Timeout: 10 * time.Second},
+		Reporter: collector,
 	})
 
 	if err != nil {
