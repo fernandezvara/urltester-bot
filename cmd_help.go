@@ -13,6 +13,7 @@ func (u *urlTester) help(m *tb.Message) {
 /newmonitor <method> <url> <expected_http_status> <interval> <private> - Adds a new monitor
 /subscribe <id> - subscribes you to the desired monitor
 /unsubscribe <id> - removes a subscription
+/summary - shows all monitor you are subscribed and returns its current status
 /test <method> <url> <expected_http_status> - Send a test request for an URL
 /testfull - Sends a test request and returns the body
 /history - returns your command history

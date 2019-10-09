@@ -3,12 +3,63 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+func (u *urlTester) visibleMonitors(userID int) (scheds []schedule, err error) {
+
+	query := u.db.Select(q.Or(
+		q.And(q.Eq("UserID", userID), q.Eq("Private", true)),
+		q.And(q.Eq("Private", false)),
+	))
+
+	err = query.Find(&scheds)
+	return
+
+}
+
+func (u *urlTester) summary(m *tb.Message) {
+
+	if !m.Private() {
+		return
+	}
+	u.saveHistory(m)
+
+	var (
+		scheds  []schedule
+		status  string
+		message string
+		diff    int64
+		err     error
+	)
+
+	scheds, err = u.visibleMonitors(m.Sender.ID)
+	if err != nil && err != storm.ErrNotFound {
+		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		return
+	}
+
+	for _, sched := range scheds {
+
+		if alreadyOnIntArray(sched.Subscriptors, m.Sender.ID) {
+			diff = time.Now().Unix() - u.lastStatus[sched.ID].Timestamp
+			status = statusText(u.lastStatus[sched.ID].Status)
+			message = fmt.Sprintf("%s%d - %s %s (%d)\n%s for %s\n", message, sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, status, secondsToHuman(diff))
+		}
+
+		message = fmt.Sprintf("%s\n", message)
+	}
+
+	u.bot.Send(m.Sender, message, tb.NoPreview)
+
+}
+
+// monitors retuns the 'visible' monitors available on the system
+// own monitors + public monitors defined by others
 func (u *urlTester) monitors(m *tb.Message) {
 
 	if !m.Private() {
@@ -16,19 +67,14 @@ func (u *urlTester) monitors(m *tb.Message) {
 	}
 	u.saveHistory(m)
 
-	query := u.db.Select(q.Or(
-		q.And(q.Eq("UserID", m.Sender.ID), q.Eq("Private", true)),
-		q.And(q.Eq("Private", false)),
-	))
-
 	var (
 		scheds  []schedule
 		message string
 		err     error
 	)
 
-	err = query.Find(&scheds)
-	if err != nil {
+	scheds, err = u.visibleMonitors(m.Sender.ID)
+	if err != nil && err != storm.ErrNotFound {
 		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
 		return
 	}
@@ -46,6 +92,7 @@ func (u *urlTester) monitors(m *tb.Message) {
 	}
 
 	u.bot.Send(m.Sender, message, tb.NoPreview)
+
 }
 
 func (u *urlTester) newmonitor(m *tb.Message) {
@@ -108,9 +155,6 @@ func (u *urlTester) newmonitor(m *tb.Message) {
 		return
 	}
 
-	log.Println("sched")
-	log.Println(sched)
-
 	// create scheduled task
 	err = u.addJob(sched)
 	if err != nil {
@@ -118,7 +162,8 @@ func (u *urlTester) newmonitor(m *tb.Message) {
 		return
 	}
 
-	log.Println(m.Sender)
+	log.Println("Monitor added.", sched)
+
 	u.bot.Send(m.Sender, "Monitor added.")
 
 }

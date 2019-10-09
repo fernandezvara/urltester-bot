@@ -44,7 +44,7 @@ func (u *urlTester) executeMonitor(args []string) {
 	}
 
 	if len(sched.Subscriptors) == 0 {
-		log.Println("no subscriptors", expected, err, args)
+		log.Println("Monitor with no subscriptors, skipping... ", expected, err, args)
 		return
 	}
 
@@ -53,7 +53,6 @@ func (u *urlTester) executeMonitor(args []string) {
 	if expected {
 		if u.lastStatus[sched.ID].Status != statusUp {
 			diff, err = u.addTimelineEntry(sched.ID, statusUp)
-			log.Println(diff, err)
 			for _, sub := range sched.Subscriptors {
 				u.bot.Send(telegramUser{id: sub}, fmt.Sprintf("RESOLVED: %s %s (%d):\n\nDowntime: %s\n", sched.Method, sched.URL, sched.ExpectedStatus, secondsToHuman(diff)), tb.NoPreview)
 			}
@@ -71,7 +70,6 @@ func (u *urlTester) executeMonitor(args []string) {
 			return
 		}
 
-		log.Println(time.Now().Unix()-u.lastStatus[sched.ID].Timestamp, secondsToHuman(time.Now().Unix()-u.lastStatus[sched.ID].Timestamp))
 		for _, sub := range sched.Subscriptors {
 			u.bot.Send(telegramUser{id: sub}, fmt.Sprintf("PROBLEM: (id:%d) %s %s (%d):\nrc: %d\nDowntime: %s\n", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, resultStatusCode, secondsToHuman(time.Now().Unix()-u.lastStatus[sched.ID].Timestamp)), tb.NoPreview)
 		}
