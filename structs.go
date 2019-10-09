@@ -13,8 +13,9 @@ import (
 
 // errors
 var (
-	errInvalidPayload = errors.New("Invalid payload: <method> <url> <expected_code>")
-	errInvalidMethod  = errors.New("Invalid method: Only GET, POST, PUT and OPTIONS allowed")
+	errInvalidPayloadTest       = errors.New("Invalid command: <method> <url> <expected_code>")
+	errInvalidPayloadNewMonitor = errors.New("Invalid command: <method> <url> <expected_code> <interval> <private:bool>")
+	errInvalidMethod            = errors.New("Invalid method: Only GET, POST, PUT and OPTIONS allowed")
 )
 
 // consts
@@ -24,11 +25,12 @@ var (
 
 // urlTester is the main struct that holds the service parts that need to interact
 type urlTester struct {
-	db        *storm.DB
-	bot       *tb.Bot
-	dbpath    string
-	token     string
-	schedules map[int]*scheduler.Job
+	db         *storm.DB
+	bot        *tb.Bot
+	dbpath     string
+	token      string
+	schedules  map[int]*scheduler.Job
+	lastStatus map[int]timeline
 	sync.RWMutex
 }
 
@@ -41,7 +43,6 @@ type schedule struct {
 	URL            string `json:"url" storm:"index"`
 	ExpectedStatus int    `json:"expected_status"`
 	Every          string `json:"every"`
-	Paused         bool   `json:"paused"`
 	Subscriptors   []int  `json:"subscriptors"`
 }
 
@@ -51,6 +52,25 @@ type history struct {
 	When    time.Time `json:"when"`
 	UserID  int       `json:"user_id" storm:"index"`
 	Message string    `json:"message"`
+}
+
+// statuses, there is a non-zero status to ensure comparations won't match for an empty entry
+const (
+	statusDown int = iota + 1
+	statusUp
+	statusStarted
+	statusStopped
+)
+
+// timeline stores the status of each monitor
+type timeline struct {
+	ID        int   `json:"id" storm:"id,increment"`
+	MonitorID int   `json:"monitor_id"`
+	Timestamp int64 `json:"timestamp"`
+	Status    int   `json:"status" storm:"index"`
+	Downtime  int64 `json:"downtime"`
+	body      string
+	headers   map[string]string
 }
 
 type telegramUser struct {

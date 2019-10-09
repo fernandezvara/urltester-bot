@@ -43,6 +43,6 @@ func startAPI(c *cli.Context) error {
 		dbpath: c.GlobalString("db-path"),
 	}
 
-	return tester.Start()
+	return tester.start()
 
 }
