@@ -54,6 +54,7 @@ func (u *urlTester) start() error {
 	u.bot.Handle("/summary", u.summary)
 	u.bot.Handle("/monitors", u.monitors)
 	u.bot.Handle("/newmonitor", u.newmonitor)
+	u.bot.Handle("/remove", u.remove)
 	u.bot.Handle("/subscribe", u.subscribe)
 	u.bot.Handle("/unsubscribe", u.unsubscribe)
 	u.bot.Handle("/test", u.test)
