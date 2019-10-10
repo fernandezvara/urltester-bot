@@ -183,15 +183,14 @@ func (u *urlTester) remove(m *tb.Message) {
 	}
 
 	if sched.UserID != m.Sender.ID {
-		u.bot.Send(m.Sender, "ERROR: You can't delete a monitors not created by you.")
+		u.bot.Send(m.Sender, "ERROR: You can't delete monitors not created by you.")
 		return
 	}
 
 	// notify suscribers about this removal
 	for subscriptor := range sched.Subscriptors {
 		if subscriptor != m.Sender.ID {
-			u.bot.Send(telegramUser{subscriptor}, "Monitor %d was removed by its owner. Settings:\nMethod: %s\nURL: %s\nExpected HTTP status: %d\nInterval: %s\n", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, sched.Every)
-			return
+			u.bot.Send(telegramUser{subscriptor}, fmt.Sprintf("Monitor %d was removed by its owner. Settings:\nMethod: %s\nURL: %s\nExpected HTTP status: %d\nInterval: %s\n", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, sched.Every), tb.NoPreview)
 		}
 	}
 
@@ -200,6 +199,11 @@ func (u *urlTester) remove(m *tb.Message) {
 		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
 		return
 	}
+
+	u.Lock()
+	u.schedules[sched.ID].Quit <- true
+	delete(u.schedules, sched.ID)
+	u.Unlock()
 
 	log.Println("Monitor removed.", sched)
 

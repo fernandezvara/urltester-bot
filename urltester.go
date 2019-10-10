@@ -100,6 +100,7 @@ func (u *urlTester) start() error {
 }
 
 func (u *urlTester) getScheduleByIDString(idString string) (sched schedule, message string) {
+
 	var (
 		parts []string
 		id    int
@@ -108,7 +109,7 @@ func (u *urlTester) getScheduleByIDString(idString string) (sched schedule, mess
 
 	parts = strings.Split(idString, " ")
 	if len(parts) != 1 {
-		message = "Please write an ID to subscribe to."
+		message = "Please write an ID."
 		return
 	}
 
@@ -121,7 +122,7 @@ func (u *urlTester) getScheduleByIDString(idString string) (sched schedule, mess
 
 	err = u.db.One("ID", id, &sched)
 	if err != nil {
-		log.Println("ERROR: ID request with error:\n", parts)
+		log.Println("ERROR: ID request with error: ", parts)
 		if err == storm.ErrNotFound {
 			message = "ID not found"
 			return
@@ -131,6 +132,7 @@ func (u *urlTester) getScheduleByIDString(idString string) (sched schedule, mess
 	}
 
 	return
+
 }
 
 // evaluateTimeExp verifies that the expression to evaluate meets the requirements
@@ -264,4 +266,5 @@ func (u *urlTester) sendRequest(method, url string, expectedStatus int) (body st
 	httpStatus = res.StatusCode
 
 	return
+
 }
