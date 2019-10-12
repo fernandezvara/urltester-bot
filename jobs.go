@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/fernandezvara/scheduler"
@@ -113,5 +116,58 @@ func newScheduledJob(amount int, unit string) *scheduler.Job {
 		this = scheduler.Every(amount).Hours()
 	}
 	return this
+
+}
+
+func (u *urlTester) sendRequest(method, url string, expectedStatus int) (body string, headers map[string]string, httpStatus int, expected bool, err error) {
+
+	var (
+		client *http.Client
+		req    *http.Request
+		res    *http.Response
+	)
+
+	// init headers
+	headers = make(map[string]string)
+
+	client = &http.Client{
+		Timeout: 2 * time.Minute,
+	}
+
+	req, err = http.NewRequest(strings.ToUpper(method), url, nil)
+	if err != nil {
+		return
+	}
+
+	res, err = client.Do(req)
+	if err != nil {
+		return
+	}
+
+	// body
+	defer res.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+	body = string(bodyBytes)
+
+	// expectedStatus ok
+	if expectedStatus == res.StatusCode {
+		expected = true
+	}
+
+	for k, v := range res.Header {
+		var vstring string
+		for _, vv := range v {
+			vstring = fmt.Sprintf("%s %s", vstring, vv)
+		}
+
+		headers[k] = vstring
+	}
+
+	httpStatus = res.StatusCode
+
+	return
 
 }
