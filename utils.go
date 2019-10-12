@@ -2,7 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/asdine/storm"
+	tb "gopkg.in/tucnak/telebot.v2"
 )
 
 func plural(count int64, singular string) (result string) {
@@ -125,4 +132,187 @@ func statusText(id int) string {
 	default:
 		return ""
 	}
+}
+
+func (u *urlTester) accessGranted(tbUser *tb.User) (authorized bool) {
+
+	_, authorized = u.userInfo(tbUser.ID)
+	return
+
+}
+
+func (u *urlTester) userInfo(id int) (tgUser user, authorized bool) {
+
+	var (
+		err error
+	)
+
+	err = u.db.One("ID", id, &tgUser)
+	// on error user will be unauthorized (if the user didn't /start'ed)
+	if err != nil {
+		u.bot.Send(telegramUser{id}, "Access not allowed. \nPlease use /start to ask for permissions.")
+		return
+	}
+
+	authorized = tgUser.Authorized
+	return
+
+}
+
+// isUserAdmin returns if the current user is allowed as administrator
+func (u *urlTester) isUserAdmin(id int) bool {
+
+	for _, adminID := range u.admins {
+		if adminID == id {
+			return true
+		}
+	}
+
+	return false
+
+}
+
+func (u *urlTester) sendMessageAndNotifyAdmins(userID int, message string) {
+
+	log.Println(userID, ":", message)
+	u.bot.Send(telegramUser{userID}, message)
+	u.sendMessageToAdmins(message)
+
+}
+
+func (u *urlTester) sendMessageToAdmins(message string) {
+
+	for _, adminID := range u.admins {
+		u.bot.Send(telegramUser{adminID}, message)
+	}
+
+}
+
+func (u *urlTester) getScheduleByIDString(idString string) (sched schedule, message string) {
+
+	var (
+		id  int
+		err error
+	)
+
+	id, message = u.parsePayloadForID(idString)
+
+	err = u.db.One("ID", id, &sched)
+	if err != nil {
+		log.Println("ERROR: ID request with error: ", idString)
+		if err == storm.ErrNotFound {
+			message = "ID not found"
+			return
+		}
+		message = "Unexpected error."
+		return
+	}
+
+	return
+
+}
+
+func (u *urlTester) parsePayloadForID(idString string) (id int, message string) {
+
+	var (
+		parts []string
+		err   error
+	)
+
+	parts = strings.Split(idString, " ")
+	if len(parts) != 1 {
+		message = "Please write an ID."
+		return
+	}
+
+	id, err = strconv.Atoi(parts[0])
+	if err != nil {
+		log.Println("ERROR: Unexpected ID:", parts)
+		message = "Unexpected ID."
+		return
+	}
+
+	return
+
+}
+
+// evaluateTimeExp verifies that the expression to evaluate meets the requirements
+// time expressions:
+// (n)s = n seconds
+// (n)m = n minutes
+// (n)h = n hours
+func evaluateTimeExp(exp string) (int, string, bool) {
+
+	var matcher = regexp.MustCompile(`^([0-9]+)([a-zA-Z])$`)
+
+	parts := matcher.FindAllStringSubmatch(exp, -1)
+
+	if len(parts) == 1 {
+		if len(parts[0]) == 3 {
+
+			i, _ := strconv.Atoi(parts[0][1])
+			switch parts[0][2] {
+			case "s", "S", "m", "M", "h", "H":
+				return i, strings.ToLower(parts[0][2]), true
+			default:
+				return 0, "", false
+			}
+
+		}
+	}
+	return 0, "", false
+
+}
+
+func headersToString(headers map[string]string) (headersString string) {
+
+	for k, v := range headers {
+		headersString = fmt.Sprintf("%s%s: %s\n", headersString, k, v)
+	}
+	return
+
+}
+
+func (u *urlTester) cleanPayload(payload string, isSchedule bool) (method, url, interval string, private bool, statusCode int, err error) {
+
+	var parts int = 3
+
+	if isSchedule == true {
+		parts = 5
+	}
+
+	payloadParts := strings.Split(payload, " ")
+	if len(payloadParts) != parts {
+		if isSchedule == true {
+			err = errInvalidPayloadNewMonitor
+			return
+		}
+		err = errInvalidPayloadTest
+		return
+	}
+
+	statusCode, err = strconv.Atoi(payloadParts[2])
+	if err != nil {
+		return
+	}
+
+	method = strings.ToUpper(payloadParts[0])
+	if u.methodAllowed(method) == false {
+		err = errInvalidMethod
+		return
+	}
+
+	url = payloadParts[1]
+
+	if isSchedule {
+		// interval must be defined as time?
+		interval = payloadParts[3]
+
+		if payloadParts[4] == "true" {
+			private = true
+		}
+	}
+
+	return
+
 }

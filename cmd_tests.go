@@ -22,7 +22,7 @@ func (u *urlTester) testURL(m *tb.Message, full bool) {
 		message      string
 	)
 
-	if !m.Private() {
+	if !m.Private() || !u.accessGranted(m.Sender) {
 		return
 	}
 	u.saveHistory(m)

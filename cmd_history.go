@@ -15,9 +15,10 @@ func (u *urlTester) history(m *tb.Message) {
 		message   string
 	)
 
-	if !m.Private() {
+	if !m.Private() || !u.accessGranted(m.Sender) {
 		return
 	}
+	u.saveHistory(m)
 
 	message = "-- History --\n"
 	err = u.db.Find("UserID", m.Sender.ID, &histories)

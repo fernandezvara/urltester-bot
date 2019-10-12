@@ -24,7 +24,7 @@ func (u *urlTester) visibleMonitors(userID int) (scheds []schedule, err error) {
 
 func (u *urlTester) summary(m *tb.Message) {
 
-	if !m.Private() {
+	if !m.Private() || !u.accessGranted(m.Sender) {
 		return
 	}
 	u.saveHistory(m)
@@ -57,7 +57,7 @@ func (u *urlTester) summary(m *tb.Message) {
 // own monitors + public monitors defined by others
 func (u *urlTester) monitors(m *tb.Message) {
 
-	if !m.Private() {
+	if !m.Private() || !u.accessGranted(m.Sender) {
 		return
 	}
 	u.saveHistory(m)
@@ -96,7 +96,7 @@ func (u *urlTester) newmonitor(m *tb.Message) {
 		sched schedule
 	)
 
-	if !m.Private() {
+	if !m.Private() || !u.accessGranted(m.Sender) {
 		return
 	}
 	u.saveHistory(m)
@@ -157,6 +157,19 @@ func (u *urlTester) newmonitor(m *tb.Message) {
 		return
 	}
 
+	// write a fake timeline (zero status)
+	// on first interval remote is down it will report the downtime
+	newTimeline := timeline{
+		MonitorID: sched.ID,
+		Timestamp: time.Now().Unix(),
+		Status:    statusUp,
+		Downtime:  0,
+	}
+
+	u.Lock()
+	u.lastStatus[sched.ID] = newTimeline
+	u.Unlock()
+
 	log.Println("Monitor added.", sched)
 
 	u.bot.Send(m.Sender, "Monitor added.")
@@ -171,7 +184,7 @@ func (u *urlTester) remove(m *tb.Message) {
 		err     error
 	)
 
-	if !m.Private() {
+	if !m.Private() || !u.accessGranted(m.Sender) {
 		return
 	}
 	u.saveHistory(m)
@@ -219,6 +232,11 @@ func (u *urlTester) subscribe(m *tb.Message) {
 		err     error
 	)
 
+	if !m.Private() || !u.accessGranted(m.Sender) {
+		return
+	}
+	u.saveHistory(m)
+
 	sched, message = u.getScheduleByIDString(m.Payload)
 	if message != "" {
 		u.bot.Send(m.Sender, message, tb.NoPreview)
@@ -249,6 +267,11 @@ func (u *urlTester) unsubscribe(m *tb.Message) {
 		message string
 		err     error
 	)
+
+	if !m.Private() || !u.accessGranted(m.Sender) {
+		return
+	}
+	u.saveHistory(m)
 
 	sched, message = u.getScheduleByIDString(m.Payload)
 	if message != "" {

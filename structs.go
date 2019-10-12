@@ -31,6 +31,7 @@ type urlTester struct {
 	token      string
 	schedules  map[int]*scheduler.Job
 	lastStatus map[int]timeline
+	admins     []int
 	sync.RWMutex
 }
 
@@ -44,6 +45,16 @@ type schedule struct {
 	ExpectedStatus int    `json:"expected_status"`
 	Every          string `json:"every"`
 	Subscriptors   []int  `json:"subscriptors"`
+}
+
+type user struct {
+	ID           int    `json:"id" storm:"id"`
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name"`
+	Username     string `json:"username"`
+	LanguageCode string `json:"language_code"`
+	IsBot        bool   `json:"is_bot"`
+	Authorized   bool   `json:"authorized"`
 }
 
 // history saves the user interactions with the bot by user
