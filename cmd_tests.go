@@ -20,20 +20,27 @@ func (u *urlTester) testURL(m *tb.Message, full bool) {
 	var (
 		headerString string
 		message      string
+		returns      []interface{}
+		method       string
+		urlString    string
+		statusCode   int
+		err          error
 	)
 
-	if !m.Private() || !u.accessGranted(m.Sender) {
-		return
-	}
 	u.saveHistory(m)
 
-	method, urlString, _, _, expectedStatus, err := u.cleanPayload(m.Payload, false)
+	returns, err = u.payloadReader(m.Text)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.bot.Send(m.Sender, err.Error())
+		return
 	}
 
-	body, headers, resultCode, expected, err := u.sendRequest(method, urlString, expectedStatus)
-	log.Println(method, urlString, expectedStatus, resultCode, expected, err)
+	method = returns[0].(string)
+	urlString = returns[1].(string)
+	statusCode = returns[2].(int)
+
+	body, headers, resultCode, expected, err := u.sendRequest(method, urlString, statusCode)
+	log.Println(method, urlString, statusCode, resultCode, expected, err)
 	if err != nil {
 		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
 		return

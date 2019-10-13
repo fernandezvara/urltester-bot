@@ -56,6 +56,9 @@ func (u *urlTester) executeMonitor(args []string) {
 	if expected {
 		if u.lastStatus[sched.ID].Status != statusUp {
 			diff, err = u.addTimelineEntry(sched.ID, statusUp)
+			if err != nil {
+				log.Println(err.Error())
+			}
 			for _, sub := range sched.Subscriptors {
 				u.bot.Send(telegramUser{id: sub}, fmt.Sprintf("RESOLVED: %s %s (%d):\n\nDowntime: %s\n", sched.Method, sched.URL, sched.ExpectedStatus, secondsToHuman(diff)), tb.NoPreview)
 			}

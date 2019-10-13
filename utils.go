@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -24,12 +25,6 @@ func plural(count int64, singular string) (result string) {
 }
 
 func secondsToHuman(input int64) (result string) {
-	// years := input % (60 * 60 * 24 * 30 * 12)
-	// months := input / 60 / 60 / 24 / 30
-	// days := input / 60 / 60 / 24
-	// hours := input % (60 * 60 * 60)
-	// minutes := input % (60 * 60)
-	// seconds := input % 60
 
 	years := math.Floor(float64(input) / 60 / 60 / 24 / 7 / 30 / 12)
 	seconds := input % (60 * 60 * 24 * 7 * 30 * 12)
@@ -71,32 +66,42 @@ func secondsToHuman(input int64) (result string) {
 		result = fmt.Sprintf("%s%s", result, plural(int64(seconds), "second"))
 	}
 
-	// if years > 0 {
-	// 	result = plural(int64(years), "year") + plural(int64(months), "month") + plural(int64(weeks), "week") + plural(int64(days), "day") + plural(int64(hours), "hour") + plural(int64(minutes), "minute") + plural(int64(seconds), "second")
-	// } else if months > 0 {
-	// 	result = plural(int64(months), "month") + plural(int64(weeks), "week") + plural(int64(days), "day") + plural(int64(hours), "hour") + plural(int64(minutes), "minute") + plural(int64(seconds), "second")
-	// } else if weeks > 0 {
-	// 	result = plural(int64(weeks), "week") + plural(int64(days), "day") + plural(int64(hours), "hour") + plural(int64(minutes), "minute") + plural(int64(seconds), "second")
-	// } else if days > 0 {
-	// 	result = plural(int64(days), "day") + plural(int64(hours), "hour") + plural(int64(minutes), "minute") + plural(int64(seconds), "second")
-	// } else if hours > 0 {
-	// 	result = plural(int64(hours), "hour") + plural(int64(minutes), "minute") + plural(int64(seconds), "second")
-	// } else if minutes > 0 {
-	// 	result = plural(int64(minutes), "minute") + plural(int64(seconds), "second")
-	// } else {
-	// 	result = plural(int64(seconds), "second")
-	// }
-
 	return
 }
 
 func alreadyOnIntArray(arr []int, value int) bool {
+
 	for _, v := range arr {
 		if v == value {
 			return true
 		}
 	}
 	return false
+
+}
+
+func alreadyOnStringArray(arr []string, value string) bool {
+
+	for _, v := range arr {
+		if v == value {
+			return true
+		}
+	}
+	return false
+
+}
+
+func arrStringToString(arr []string) (message string) {
+
+	for _, v := range arr {
+		if len(message) == 0 {
+			message = fmt.Sprintf("'%s'", v)
+		} else {
+			message = fmt.Sprintf("%s, '%s'", message, v)
+		}
+	}
+
+	return
 }
 
 func removeFromIntArray(arr []int, value int) (newArr []int) {
@@ -107,16 +112,7 @@ func removeFromIntArray(arr []int, value int) (newArr []int) {
 		}
 	}
 	return
-}
 
-func (u *urlTester) methodAllowed(method string) bool {
-	for _, m := range allowedMethods {
-		if method == m {
-			return true
-		}
-	}
-
-	return false
 }
 
 func statusText(id int) string {
@@ -188,47 +184,15 @@ func (u *urlTester) sendMessageToAdmins(message string) {
 
 }
 
-func (u *urlTester) getScheduleByIDString(idString string) (sched schedule, message string) {
-
-	var (
-		id  int
-		err error
-	)
-
-	id, message = u.parsePayloadForID(idString)
+func (u *urlTester) getScheduleByID(id int) (sched schedule, err error) {
 
 	err = u.db.One("ID", id, &sched)
 	if err != nil {
-		log.Println("ERROR: ID request with error: ", idString)
 		if err == storm.ErrNotFound {
-			message = "ID not found"
+			err = errors.New("ID not found")
 			return
 		}
-		message = "Unexpected error."
-		return
-	}
-
-	return
-
-}
-
-func (u *urlTester) parsePayloadForID(idString string) (id int, message string) {
-
-	var (
-		parts []string
-		err   error
-	)
-
-	parts = strings.Split(idString, " ")
-	if len(parts) != 1 {
-		message = "Please write an ID."
-		return
-	}
-
-	id, err = strconv.Atoi(parts[0])
-	if err != nil {
-		log.Println("ERROR: Unexpected ID:", parts)
-		message = "Unexpected ID."
+		err = errors.New("unexpected error")
 		return
 	}
 
@@ -269,50 +233,6 @@ func headersToString(headers map[string]string) (headersString string) {
 	for k, v := range headers {
 		headersString = fmt.Sprintf("%s%s: %s\n", headersString, k, v)
 	}
-	return
-
-}
-
-func (u *urlTester) cleanPayload(payload string, isSchedule bool) (method, url, interval string, private bool, statusCode int, err error) {
-
-	var parts int = 3
-
-	if isSchedule == true {
-		parts = 5
-	}
-
-	payloadParts := strings.Split(payload, " ")
-	if len(payloadParts) != parts {
-		if isSchedule == true {
-			err = errInvalidPayloadNewMonitor
-			return
-		}
-		err = errInvalidPayloadTest
-		return
-	}
-
-	statusCode, err = strconv.Atoi(payloadParts[2])
-	if err != nil {
-		return
-	}
-
-	method = strings.ToUpper(payloadParts[0])
-	if u.methodAllowed(method) == false {
-		err = errInvalidMethod
-		return
-	}
-
-	url = payloadParts[1]
-
-	if isSchedule {
-		// interval must be defined as time?
-		interval = payloadParts[3]
-
-		if payloadParts[4] == "true" {
-			private = true
-		}
-	}
-
 	return
 
 }

@@ -24,14 +24,21 @@ func (u *urlTester) botstart() error {
 	)
 
 	log.Println("Starting API ...")
+
 	// set up database
 	u.db, err = storm.Open(u.dbpath)
+	if err != nil {
+		return err
+	}
 	u.db.Init(&history{})
 	u.db.Init(&schedule{})
+	u.db.Init(&user{})
+	u.db.Init(&timeline{})
 
 	// schedule map
 	u.schedules = make(map[int]*scheduler.Job)
 	u.lastStatus = make(map[int]timeline)
+	u.commands = u.buildCommands()
 
 	// set up bot
 	u.bot, err = tb.NewBot(tb.Settings{
@@ -44,26 +51,7 @@ func (u *urlTester) botstart() error {
 		return err
 	}
 
-	// start command
-	u.bot.Handle("/start", u.start)
-
-	// user commands
-	u.bot.Handle("/hello", u.hello)
-	u.bot.Handle("/summary", u.summary)
-	u.bot.Handle("/monitors", u.monitors)
-	u.bot.Handle("/newmonitor", u.newmonitor)
-	u.bot.Handle("/remove", u.remove)
-	u.bot.Handle("/subscribe", u.subscribe)
-	u.bot.Handle("/unsubscribe", u.unsubscribe)
-	u.bot.Handle("/test", u.test)
-	u.bot.Handle("/testfull", u.testFull)
-	u.bot.Handle("/history", u.history)
-	u.bot.Handle("/help", u.help)
-
-	// admin commands
-	u.bot.Handle("/grant", u.grant)
-	u.bot.Handle("/revoke", u.revoke)
-	u.bot.Handle("/users", u.users)
+	u.bot.Handle(tb.OnText, u.handler)
 
 	// handle stop
 	ch := make(chan os.Signal, 1)
