@@ -39,6 +39,7 @@ const (
 
 type command struct {
 	fn        func(m *tb.Message) // function to execute
+	noHelp    bool                // hide on help command
 	isPrivate bool                // command needs to be send privatelly to the bot
 	forUsers  bool                // must be user of the bot in order of been able to use it
 	forAdmins bool                // must be admin to use it
@@ -106,6 +107,7 @@ type timeline struct {
 	Timestamp int64 `json:"timestamp"`
 	Status    int   `json:"status" storm:"index"`
 	Downtime  int64 `json:"downtime"`
+	duration  time.Duration
 	body      string
 	headers   map[string]string
 }

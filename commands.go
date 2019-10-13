@@ -7,6 +7,8 @@ const (
 	helpMethod     = "HTTP Method to use."
 	helpURL        = "Full URL to monitor. Ex: https://google.com "
 	helpPrivate    = "Sets the monitor as private to the owner."
+	helpText       = "Text to search for on request's body"
+	helpTimeout    = "Timeot that will trigger a monitor"
 )
 
 func (u *urlTester) buildCommands() (commands map[string]command) {
@@ -33,10 +35,20 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		payload:   []payloadPart{},
 	}
 
+	commands["/history"] = command{
+		fn:        u.history,
+		isPrivate: true,
+		forUsers:  false,
+		forAdmins: false,
+		helpShort: "shows last commands sent to the bot",
+		helpLong:  "shows last commands sent to the bot",
+		payload:   []payloadPart{},
+	}
+
 	commands["/summary"] = command{
 		fn:        u.summary,
 		isPrivate: true,
-		forUsers:  false,
+		forUsers:  true,
 		forAdmins: false,
 		helpShort: "shows current status of monitors subscribed to",
 		helpLong:  "shows current status of monitors subscribed to",
@@ -46,7 +58,7 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 	commands["/monitors"] = command{
 		fn:        u.monitors,
 		isPrivate: true,
-		forUsers:  false,
+		forUsers:  true,
 		forAdmins: false,
 		helpShort: "shows current defined monitors",
 		helpLong:  "shows current defined monitors",
@@ -148,6 +160,48 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		},
 	}
 
+	commands["/settext"] = command{
+		fn:        u.settext,
+		isPrivate: true,
+		forUsers:  true,
+		forAdmins: false,
+		helpShort: "updates the expected text to be found on every monitor request",
+		helpLong:  "updates the expected text to be found on every monitor request",
+		payload: []payloadPart{
+			payloadPart{
+				arg:  "id",
+				typ:  typeInt,
+				help: helpMonitorID,
+			},
+			payloadPart{
+				arg:  "text",
+				typ:  typeString,
+				help: helpText,
+			},
+		},
+	}
+
+	commands["/settimeout"] = command{
+		fn:        u.settimeout,
+		isPrivate: true,
+		forUsers:  true,
+		forAdmins: false,
+		helpShort: "updates the expected timeout to be found on every monitor request",
+		helpLong:  "updates the expected timeout to be found on every monitor request",
+		payload: []payloadPart{
+			payloadPart{
+				arg:  "id",
+				typ:  typeInt,
+				help: helpMonitorID,
+			},
+			payloadPart{
+				arg:  "timeout",
+				typ:  typeTimeExp,
+				help: helpTimeout,
+			},
+		},
+	}
+
 	commands["/subscribe"] = command{
 		fn:        u.subscribe,
 		isPrivate: true,
@@ -232,16 +286,6 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 				help: helpURL,
 			},
 		},
-	}
-
-	commands["/history"] = command{
-		fn:        u.history,
-		isPrivate: true,
-		forUsers:  false,
-		forAdmins: false,
-		helpShort: "shows last commands sent to the bot",
-		helpLong:  "shows last commands sent to the bot",
-		payload:   []payloadPart{},
 	}
 
 	commands["/users"] = command{

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -51,6 +52,9 @@ func (u *urlTester) botstart() error {
 		return err
 	}
 
+	u.bot.Handle("/about", func(m *tb.Message) {
+		u.bot.Send(m.Sender, fmt.Sprintf("*Version:*\n%s\n*Repo URL:*\n[%s]\n*Commit:*\n'%s'\n*Build date:*\n%s", Version, RepoURL, Commit, BuildDate), tb.NoPreview, tb.ModeMarkdown)
+	})
 	u.bot.Handle(tb.OnText, u.handler)
 
 	// handle stop
@@ -85,6 +89,7 @@ func (u *urlTester) botstart() error {
 	}
 
 	log.Println("Starting Bot ...")
+	log.Printf("Version: %s, Commit: '%s', Build date: %s", Version, Commit, BuildDate)
 	u.bot.Start()
 	return nil
 

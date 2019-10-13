@@ -51,7 +51,7 @@ func (u *urlTester) executeMonitor(args []string) {
 		return
 	}
 
-	_, _, resultStatusCode, expected, err = u.sendRequest(method, urlString, statusCode)
+	_, _, _, resultStatusCode, expected, err = u.sendRequest(method, urlString, statusCode, sched.ExpectedText, sched.ExpectedTimeout)
 
 	if expected {
 		if u.lastStatus[sched.ID].Status != statusUp {
@@ -122,12 +122,16 @@ func newScheduledJob(amount int, unit string) *scheduler.Job {
 
 }
 
-func (u *urlTester) sendRequest(method, url string, expectedStatus int) (body string, headers map[string]string, httpStatus int, expected bool, err error) {
+func (u *urlTester) sendRequest(method, url string, expectedStatus int, text, timeout string) (duration time.Duration, body string, headers map[string]string, httpStatus int, expected bool, err error) {
 
 	var (
-		client *http.Client
-		req    *http.Request
-		res    *http.Response
+		client       *http.Client
+		req          *http.Request
+		res          *http.Response
+		checkStatus  bool
+		checkText    bool
+		checkTimeout bool
+		start        time.Time
 	)
 
 	// init headers
@@ -136,6 +140,8 @@ func (u *urlTester) sendRequest(method, url string, expectedStatus int) (body st
 	client = &http.Client{
 		Timeout: 2 * time.Minute,
 	}
+
+	start = time.Now()
 
 	req, err = http.NewRequest(strings.ToUpper(method), url, nil)
 	if err != nil {
@@ -155,11 +161,6 @@ func (u *urlTester) sendRequest(method, url string, expectedStatus int) (body st
 	}
 	body = string(bodyBytes)
 
-	// expectedStatus ok
-	if expectedStatus == res.StatusCode {
-		expected = true
-	}
-
 	for k, v := range res.Header {
 		var vstring string
 		for _, vv := range v {
@@ -170,6 +171,41 @@ func (u *urlTester) sendRequest(method, url string, expectedStatus int) (body st
 	}
 
 	httpStatus = res.StatusCode
+	duration = time.Now().Sub(start)
+
+	// expectedStatus ok
+	checkStatus = expectedStatus == res.StatusCode
+
+	if text == "" {
+		checkText = true
+	} else {
+		checkText = strings.Contains(body, text)
+	}
+
+	if timeout == "" {
+		checkTimeout = true
+	} else {
+		var (
+			amount          int
+			units           string
+			expectedTimeout time.Duration
+		)
+		amount, units, _ = evaluateTimeExp(timeout)
+		switch units {
+		case "s", "S":
+			expectedTimeout = time.Duration(amount) * time.Second
+		case "m", "M":
+			expectedTimeout = time.Duration(amount) * time.Minute
+		case "h", "H":
+			expectedTimeout = time.Duration(amount) * time.Hour
+		}
+
+		checkTimeout = duration < expectedTimeout
+	}
+
+	if checkStatus && checkText && checkTimeout {
+		expected = true
+	}
 
 	return
 
