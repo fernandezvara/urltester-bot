@@ -10,9 +10,6 @@ import (
 // the client will send a /start on the first contact
 func (u *urlTester) start(m *tb.Message) {
 
-	if !m.Private() {
-		return
-	}
 	u.saveHistory(m)
 
 	if u.accessGranted(m.Sender) {

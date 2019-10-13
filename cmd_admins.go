@@ -9,9 +9,6 @@ import (
 // grantOrRevoke modifies the authorized status for a user
 func (u *urlTester) users(m *tb.Message) {
 
-	if !m.Private() || !u.isUserAdmin(m.Sender.ID) {
-		return
-	}
 	u.saveHistory(m)
 
 	var (
@@ -59,18 +56,23 @@ func (u *urlTester) revoke(m *tb.Message) {
 // grantOrRevoke modifies the authorized status for a user
 func (u *urlTester) grantOrRevoke(m *tb.Message, action bool) {
 
-	if !m.Private() || !u.isUserAdmin(m.Sender.ID) {
-		return
-	}
 	u.saveHistory(m)
 
 	var (
-		id     int
-		err    error
-		tgUser user
+		id      int
+		returns []interface{}
+		err     error
+		tgUser  user
 	)
 
-	id, _ = u.parsePayloadForID(m.Payload)
+	returns, err = u.payloadReader(m.Text)
+	if err != nil {
+		u.bot.Send(m.Sender, err.Error())
+		return
+	}
+
+	id = returns[0].(int)
+
 	err = u.db.One("ID", id, &tgUser)
 	if err != nil {
 		u.bot.Send(m.Sender, fmt.Sprintf("There was an error: %s", err.Error()))
