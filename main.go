@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -10,7 +11,8 @@ import (
 func main() {
 
 	app := cli.App{}
-	app.Name = "urltester"
+	app.Name = "URLTesterBot"
+	app.Version = fmt.Sprintf("%s (%s)", Version, Commit)
 	app.Usage = "Service that schedules URL monitoring by user request. \nAll the configuration is done by the final user itself by using the telegram bot."
 
 	app.Flags = []cli.Flag{
