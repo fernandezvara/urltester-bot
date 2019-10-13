@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/asdine/storm"
@@ -87,6 +88,84 @@ func (u *urlTester) setstatuscode(m *tb.Message) {
 
 }
 
+func (u *urlTester) settext(m *tb.Message) {
+
+	u.saveHistory(m)
+
+	var (
+		id      int
+		text    string
+		returns []interface{}
+		err     error
+		sched   schedule
+	)
+
+	returns, err = u.payloadReader(m.Text)
+	if err != nil {
+		u.bot.Send(m.Sender, err.Error())
+		return
+	}
+
+	id = returns[0].(int)
+	text = returns[1].(string)
+
+	sched, err = u.getScheduleByID(id)
+	if err != nil {
+		u.bot.Send(m.Sender, err.Error())
+		return
+	}
+
+	sched.ExpectedText = text
+
+	err = u.updateSchedule(&sched)
+	if err != nil {
+		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		return
+	}
+
+	u.bot.Send(m.Sender, "Text updated.")
+
+}
+
+func (u *urlTester) settimeout(m *tb.Message) {
+
+	u.saveHistory(m)
+
+	var (
+		id      int
+		timeout string
+		returns []interface{}
+		err     error
+		sched   schedule
+	)
+
+	returns, err = u.payloadReader(m.Text)
+	if err != nil {
+		u.bot.Send(m.Sender, err.Error())
+		return
+	}
+
+	id = returns[0].(int)
+	timeout = returns[1].(string)
+
+	sched, err = u.getScheduleByID(id)
+	if err != nil {
+		u.bot.Send(m.Sender, err.Error())
+		return
+	}
+
+	sched.ExpectedTimeout = timeout
+
+	err = u.updateSchedule(&sched)
+	if err != nil {
+		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		return
+	}
+
+	u.bot.Send(m.Sender, "Timeout updated updated.")
+
+}
+
 func (u *urlTester) updateSchedule(sched *schedule) (err error) {
 
 	u.Lock()
@@ -107,9 +186,6 @@ func (u *urlTester) updateSchedule(sched *schedule) (err error) {
 
 	return
 }
-
-func (u *urlTester) settext(m *tb.Message)    {}
-func (u *urlTester) settimeout(m *tb.Message) {}
 
 func (u *urlTester) newmonitor(m *tb.Message) {
 
@@ -134,9 +210,9 @@ func (u *urlTester) newmonitor(m *tb.Message) {
 
 	method = returns[0].(string)
 	urlString = returns[1].(string)
-	statusCode = returns[0].(int)
-	interval = returns[0].(string)
-	private = returns[0].(bool)
+	statusCode = returns[2].(int)
+	interval = returns[3].(string)
+	private = returns[4].(bool)
 
 	// monitor exists? look for the private urls of the current user or public ones
 	query := u.db.Select(q.Or(
@@ -168,7 +244,7 @@ func (u *urlTester) newmonitor(m *tb.Message) {
 	// insert in db
 	sched.UserID = m.Sender.ID
 	sched.Private = private
-	sched.Method = method
+	sched.Method = strings.ToUpper(method)
 	sched.URL = urlString
 	sched.ExpectedStatus = statusCode
 	sched.Every = interval
