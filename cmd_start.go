@@ -23,6 +23,12 @@ func (u *urlTester) start(m *tb.Message) {
 		isAdmin bool
 	)
 
+	tgUser, _ = u.userInfo(m.Sender.ID)
+	if tgUser.FirstName != "" || tgUser.LastName != "" || tgUser.LanguageCode != "" {
+		u.bot.Send(m.Sender, "Access already requested.")
+		return
+	}
+
 	tgUser.ID = m.Sender.ID
 	tgUser.FirstName = m.Sender.FirstName
 	tgUser.LastName = m.Sender.LastName
@@ -47,6 +53,7 @@ func (u *urlTester) start(m *tb.Message) {
 	}
 
 	u.bot.Send(m.Sender, "An Administration grant has been requested.")
+	u.bot.Send(m.Sender, fmt.Sprintf("This is an open source project. You can setup your own bot: %s", RepoURL))
 	u.sendMessageToAdmins(fmt.Sprintf("A new user request access: %s %s (%d)", tgUser.FirstName, tgUser.LastName, tgUser.ID))
 
 }
