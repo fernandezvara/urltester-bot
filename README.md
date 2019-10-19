@@ -127,6 +127,11 @@ GLOBAL OPTIONS:
 
 # Changes:
 
+0.3.0:
+
+- Problems now explain the failure
+- Markdown messages updated
+
 0.2.1:
 
 - /about command
