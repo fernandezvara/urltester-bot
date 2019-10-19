@@ -21,7 +21,11 @@ func (u *urlTester) executeMonitor(args []string) {
 		urlString        string
 		statusCode       int
 		resultStatusCode int
+		checkStatus      bool
+		checkText        bool
+		checkTimeout     bool
 		expected         bool
+		duration         time.Duration
 		err              error
 		sched            schedule
 		diff             int64
@@ -51,7 +55,7 @@ func (u *urlTester) executeMonitor(args []string) {
 		return
 	}
 
-	_, _, _, resultStatusCode, expected, err = u.sendRequest(method, urlString, statusCode, sched.ExpectedText, sched.ExpectedTimeout)
+	duration, _, _, resultStatusCode, checkStatus, checkText, checkTimeout, expected, err = u.sendRequest(method, urlString, statusCode, sched.ExpectedText, sched.ExpectedTimeout)
 
 	if expected {
 		if u.lastStatus[sched.ID].Status != statusUp {
@@ -60,25 +64,38 @@ func (u *urlTester) executeMonitor(args []string) {
 				log.Println(err.Error())
 			}
 			for _, sub := range sched.Subscriptors {
-				u.bot.Send(telegramUser{id: sub}, fmt.Sprintf("RESOLVED: %s %s (%d):\n\nDowntime: %s\n", sched.Method, sched.URL, sched.ExpectedStatus, secondsToHuman(diff)), tb.NoPreview)
+				u.bot.Send(telegramUser{id: sub}, fmt.Sprintf("*RESOLVED*: (id:%d) \n%s [%s] (%d):\n\n*Downtime*: %s\n", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, secondsToHuman(diff)), tb.NoPreview, tb.ModeMarkdown)
 			}
 		}
 	} else {
+
+		var message string
+		message = fmt.Sprintf("*PROBLEM*: (id:%d) \n%s [%s] (%d):\n\n", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus)
+
+		if err != nil {
+			message = fmt.Sprintf("%s*ERROR*: %s\n", message, err.Error())
+		} else {
+			if !checkStatus {
+				message = fmt.Sprintf("%s*ERROR*: HTTP status received: %d\n", message, resultStatusCode)
+			}
+			if !checkText {
+				message = fmt.Sprintf("%s*ERROR*: Text not found\n", message)
+			}
+			if !checkTimeout {
+				message = fmt.Sprintf("%s*ERROR*: Timeout exceed: %s\n", message, duration.String())
+			}
+		}
+
 		if u.lastStatus[sched.ID].Status != statusDown {
 			_, _ = u.addTimelineEntry(sched.ID, statusDown)
-			for _, sub := range sched.Subscriptors {
-				if err != nil {
-					u.bot.Send(telegramUser{id: sub}, fmt.Sprintf("PROBLEM: (id:%d) %s %s (%d):\nerror: %s", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, err.Error()), tb.NoPreview)
-				} else {
-					u.bot.Send(telegramUser{id: sub}, fmt.Sprintf("PROBLEM: (id:%d) %s %s (%d):\nres status: %d", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, resultStatusCode), tb.NoPreview)
-				}
-			}
-			return
+		} else {
+			message = fmt.Sprintf("%s\n*Downtime*: %s\n", message, secondsToHuman(time.Now().Unix()-u.lastStatus[sched.ID].Timestamp))
 		}
 
 		for _, sub := range sched.Subscriptors {
-			u.bot.Send(telegramUser{id: sub}, fmt.Sprintf("PROBLEM: (id:%d) %s %s (%d):\nres status: %d\nDowntime: %s\n", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, resultStatusCode, secondsToHuman(time.Now().Unix()-u.lastStatus[sched.ID].Timestamp)), tb.NoPreview)
+			u.bot.Send(telegramUser{id: sub}, message, tb.NoPreview, tb.ModeMarkdown)
 		}
+
 	}
 
 }
@@ -122,16 +139,13 @@ func newScheduledJob(amount int, unit string) *scheduler.Job {
 
 }
 
-func (u *urlTester) sendRequest(method, url string, expectedStatus int, text, timeout string) (duration time.Duration, body string, headers map[string]string, httpStatus int, expected bool, err error) {
+func (u *urlTester) sendRequest(method, url string, expectedStatus int, text, timeout string) (duration time.Duration, body string, headers map[string]string, httpStatus int, checkStatus, checkText, checkTimeout, expected bool, err error) {
 
 	var (
-		client       *http.Client
-		req          *http.Request
-		res          *http.Response
-		checkStatus  bool
-		checkText    bool
-		checkTimeout bool
-		start        time.Time
+		client *http.Client
+		req    *http.Request
+		res    *http.Response
+		start  time.Time
 	)
 
 	// init headers

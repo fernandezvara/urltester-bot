@@ -39,7 +39,7 @@ func (u *urlTester) testURL(m *tb.Message, full bool) {
 	urlString = returns[1].(string)
 	statusCode = returns[2].(int)
 
-	duration, body, headers, resultCode, expected, err := u.sendRequest(method, urlString, statusCode, "", "")
+	duration, body, headers, resultCode, _, _, _, expected, err := u.sendRequest(method, urlString, statusCode, "", "")
 	log.Println(method, urlString, statusCode, resultCode, expected, err)
 	if err != nil {
 		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
