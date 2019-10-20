@@ -1,27 +1,19 @@
 package main
 
 import (
-	"fmt"
-
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-func (u *urlTester) subscribe(m *tb.Message) {
+func (u *urlTester) subscribe(m *tb.Message, returns []interface{}) {
 
 	var (
-		sched   schedule
-		returns []interface{}
-		id      int
-		err     error
+		sched schedule
+
+		id  int
+		err error
 	)
 
 	u.saveHistory(m)
-
-	returns, err = u.payloadReader(m.Text)
-	if err != nil {
-		u.bot.Send(m.Sender, err.Error())
-		return
-	}
 
 	id = returns[0].(int)
 
@@ -40,7 +32,7 @@ func (u *urlTester) subscribe(m *tb.Message) {
 
 	err = u.db.Save(&sched)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 
@@ -48,22 +40,16 @@ func (u *urlTester) subscribe(m *tb.Message) {
 
 }
 
-func (u *urlTester) unsubscribe(m *tb.Message) {
+func (u *urlTester) unsubscribe(m *tb.Message, returns []interface{}) {
 
 	var (
-		sched   schedule
-		returns []interface{}
-		id      int
-		err     error
+		sched schedule
+
+		id  int
+		err error
 	)
 
 	u.saveHistory(m)
-
-	returns, err = u.payloadReader(m.Text)
-	if err != nil {
-		u.bot.Send(m.Sender, err.Error())
-		return
-	}
 
 	id = returns[0].(int)
 
@@ -78,7 +64,7 @@ func (u *urlTester) unsubscribe(m *tb.Message) {
 		sched.Subscriptors = removeFromIntArray(sched.Subscriptors, m.Sender.ID)
 		err = u.db.Save(&sched)
 		if err != nil {
-			u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+			u.explainError(m, "", err)
 			return
 		}
 		u.bot.Send(m.Sender, "Unsubscribed.")

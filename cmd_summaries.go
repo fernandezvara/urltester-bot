@@ -21,7 +21,7 @@ func (u *urlTester) visibleMonitors(userID int) (scheds []schedule, err error) {
 
 }
 
-func (u *urlTester) summary(m *tb.Message) {
+func (u *urlTester) summary(m *tb.Message, returns []interface{}) {
 
 	u.saveHistory(m)
 
@@ -34,7 +34,7 @@ func (u *urlTester) summary(m *tb.Message) {
 
 	scheds, err = u.visibleMonitors(m.Sender.ID)
 	if err != nil && err != storm.ErrNotFound {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 
@@ -51,7 +51,7 @@ func (u *urlTester) summary(m *tb.Message) {
 
 // monitors retuns the 'visible' monitors available on the system
 // own monitors + public monitors defined by others
-func (u *urlTester) monitors(m *tb.Message) {
+func (u *urlTester) monitors(m *tb.Message, returns []interface{}) {
 
 	u.saveHistory(m)
 
@@ -63,7 +63,7 @@ func (u *urlTester) monitors(m *tb.Message) {
 
 	scheds, err = u.visibleMonitors(m.Sender.ID)
 	if err != nil && err != storm.ErrNotFound {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 

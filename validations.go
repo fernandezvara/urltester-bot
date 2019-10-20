@@ -6,27 +6,35 @@ import (
 	"strings"
 )
 
-func (u *urlTester) payloadReader(text string) (returns []interface{}, err error) {
+func (u *urlTester) payloadReader(text string) (cmdString string, returns []interface{}, err error) {
 
 	var (
 		textParts []string
 		parts     []string
-		command   string
 		expects   []payloadPart
 	)
 
-	textParts = strings.Split(text, " ")
-	command = textParts[0]
+	// remove double whitespaces before split
+	textParts = strings.Split(strings.Join(strings.Fields(strings.TrimSpace(text)), " "), " ")
+	cmdString = textParts[0]
 	for i, p := range textParts {
 		if i != 0 {
 			parts = append(parts, p)
 		}
 	}
 
-	expects = u.commands[command].payload
+	_, ok := u.commands[cmdString]
+	if !ok {
+		err = errCommandNotFound
+		return
+	}
 
-	fmt.Println("expects:", expects)
+	if len(textParts) > 1 && strings.ToUpper(textParts[1]) == "HELP" {
+		err = errInvalidPayload
+		return
+	}
 
+	expects = u.commands[cmdString].payload
 	if len(parts) != len(expects) {
 		err = errInvalidPayload
 		return

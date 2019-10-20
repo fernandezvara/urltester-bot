@@ -11,23 +11,16 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-func (u *urlTester) setinterval(m *tb.Message) {
+func (u *urlTester) setinterval(m *tb.Message, returns []interface{}) {
 
 	u.saveHistory(m)
 
 	var (
 		id       int
 		interval string
-		returns  []interface{}
 		err      error
 		sched    schedule
 	)
-
-	returns, err = u.payloadReader(m.Text)
-	if err != nil {
-		u.bot.Send(m.Sender, err.Error())
-		return
-	}
 
 	id = returns[0].(int)
 	interval = returns[1].(string)
@@ -42,30 +35,23 @@ func (u *urlTester) setinterval(m *tb.Message) {
 
 	err = u.updateSchedule(&sched)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 
 	u.bot.Send(m.Sender, "Interval updated.")
 
 }
-func (u *urlTester) setstatuscode(m *tb.Message) {
+func (u *urlTester) setstatuscode(m *tb.Message, returns []interface{}) {
 
 	u.saveHistory(m)
 
 	var (
 		id         int
 		statusCode int
-		returns    []interface{}
 		err        error
 		sched      schedule
 	)
-
-	returns, err = u.payloadReader(m.Text)
-	if err != nil {
-		u.bot.Send(m.Sender, err.Error())
-		return
-	}
 
 	id = returns[0].(int)
 	statusCode = returns[1].(int)
@@ -80,7 +66,7 @@ func (u *urlTester) setstatuscode(m *tb.Message) {
 
 	err = u.updateSchedule(&sched)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 
@@ -88,23 +74,16 @@ func (u *urlTester) setstatuscode(m *tb.Message) {
 
 }
 
-func (u *urlTester) settext(m *tb.Message) {
+func (u *urlTester) settext(m *tb.Message, returns []interface{}) {
 
 	u.saveHistory(m)
 
 	var (
-		id      int
-		text    string
-		returns []interface{}
-		err     error
-		sched   schedule
+		id    int
+		text  string
+		err   error
+		sched schedule
 	)
-
-	returns, err = u.payloadReader(m.Text)
-	if err != nil {
-		u.bot.Send(m.Sender, err.Error())
-		return
-	}
 
 	id = returns[0].(int)
 	text = returns[1].(string)
@@ -119,7 +98,7 @@ func (u *urlTester) settext(m *tb.Message) {
 
 	err = u.updateSchedule(&sched)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 
@@ -127,23 +106,16 @@ func (u *urlTester) settext(m *tb.Message) {
 
 }
 
-func (u *urlTester) settimeout(m *tb.Message) {
+func (u *urlTester) settimeout(m *tb.Message, returns []interface{}) {
 
 	u.saveHistory(m)
 
 	var (
 		id      int
 		timeout string
-		returns []interface{}
 		err     error
 		sched   schedule
 	)
-
-	returns, err = u.payloadReader(m.Text)
-	if err != nil {
-		u.bot.Send(m.Sender, err.Error())
-		return
-	}
 
 	id = returns[0].(int)
 	timeout = returns[1].(string)
@@ -158,7 +130,7 @@ func (u *urlTester) settimeout(m *tb.Message) {
 
 	err = u.updateSchedule(&sched)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 
@@ -187,11 +159,10 @@ func (u *urlTester) updateSchedule(sched *schedule) (err error) {
 	return
 }
 
-func (u *urlTester) newmonitor(m *tb.Message) {
+func (u *urlTester) newmonitor(m *tb.Message, returns []interface{}) {
 
 	var (
 		sched      schedule
-		returns    []interface{}
 		method     string
 		urlString  string
 		statusCode int
@@ -201,12 +172,6 @@ func (u *urlTester) newmonitor(m *tb.Message) {
 	)
 
 	u.saveHistory(m)
-
-	returns, err = u.payloadReader(m.Text)
-	if err != nil {
-		u.bot.Send(m.Sender, err.Error())
-		return
-	}
 
 	method = returns[0].(string)
 	urlString = returns[1].(string)
@@ -223,7 +188,7 @@ func (u *urlTester) newmonitor(m *tb.Message) {
 	var scheds []schedule
 	err = query.Find(&scheds)
 	if err != nil && err != storm.ErrNotFound { // not found is not an error but the desired state
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 
@@ -252,14 +217,14 @@ func (u *urlTester) newmonitor(m *tb.Message) {
 
 	err = u.db.Save(&sched)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 
 	// create scheduled task
 	err = u.addJob(sched)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 
@@ -282,22 +247,15 @@ func (u *urlTester) newmonitor(m *tb.Message) {
 
 }
 
-func (u *urlTester) remove(m *tb.Message) {
+func (u *urlTester) remove(m *tb.Message, returns []interface{}) {
 
 	u.saveHistory(m)
 
 	var (
-		sched   schedule
-		id      int
-		returns []interface{}
-		err     error
+		sched schedule
+		id    int
+		err   error
 	)
-
-	returns, err = u.payloadReader(m.Text)
-	if err != nil {
-		u.bot.Send(m.Sender, err.Error())
-		return
-	}
 
 	id = returns[0].(int)
 
@@ -321,7 +279,7 @@ func (u *urlTester) remove(m *tb.Message) {
 
 	err = u.db.DeleteStruct(&sched)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 
