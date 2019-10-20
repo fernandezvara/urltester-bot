@@ -64,18 +64,19 @@ To create a new token/bot you need type `/newbot` and answer these questions ( B
 - Name for the bot. Anything must fit but some rules could be.
 - Username for the bot. It must end in `_bot`.
 
-You will have something like: 
+After answering the questions, you will have something like this: _(this is a non-working example)_
 ```
-Done! Congratulations on your new bot. You will find it at t.me/demobotexample_bot. You can now add a description, about section and profile picture for your bot, see /help for a list of commands. By the way, when you've finished creating your cool bot, ping our Bot Support if you want a better username for it. Just make sure the bot is fully operational before you do this.
+Done! Congratulations on your new bot. You will find it at ...
 
 Use this token to access the HTTP API:
-`123456789:ASDFGasdfgzxcvZXCVqwerQEWR`
+`123456789:SAMPLEsampleSAMPLEsample`
 Keep your token secure and store it safely, it can be used by anyone to control your bot.
 
-For a description of the Bot API, see this page: https://core.telegram.org/bots/api
+For a description of the Bot API, ...
 ````
 
-Your api key is `123456789:ASDFGasdfgzxcvZXCVqwerQEWR`, the one that the bot expects to run with the name and username you select on the wizard.
+In this case your API key would be `123456789:SAMPLEsampleSAMPLEsample`, by using it the bot will impersonate with the name and username you selected on the wizard.
+Remember that API key can make any change on your bot and control it so *ensure you keep your token secure*.
 
 ## How-To know your own Telegram User ID.
 
@@ -94,10 +95,10 @@ Example:
 
 ```
 # using flags
-./urltester-bot --telegram-token 123456789:ASDFGasdfgzxcvZXCVqwerQEWR --admins 12345678 --admins 23456789 --admins 34567890 --db-path /opt/urltester/db/urltester.db
+./urltester-bot --telegram-token 123456789:SAMPLEsampleSAMPLEsample --admins 12345678 --admins 23456789 --admins 34567890 --db-path /opt/urltester/db/urltester.db
 
 # using environment variables
-TELEGRAM_TOKEN="123456789:ASDFGasdfgzxcvZXCVqwerQEWR" ADMINS="12345678,23456789,34567890" DB_PATH="/opt/urltester/db/urltester.db" ./urltester-bot 
+TELEGRAM_TOKEN="123456789:SAMPLEsampleSAMPLEsample" ADMINS="12345678,23456789,34567890" DB_PATH="/opt/urltester/db/urltester.db" ./urltester-bot 
 ```
 
 
