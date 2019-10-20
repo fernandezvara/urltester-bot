@@ -8,7 +8,7 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-func (u *urlTester) history(m *tb.Message) {
+func (u *urlTester) history(m *tb.Message, returns []interface{}) {
 
 	var (
 		err       error
@@ -20,8 +20,7 @@ func (u *urlTester) history(m *tb.Message) {
 	message = "-- History --\n"
 	err = u.db.Find("UserID", m.Sender.ID, &histories, storm.Limit(20), storm.Reverse()) // the last 20 messages or less
 	if err != nil {
-		u.bot.Send(m.Sender, "there was an error retrieving information")
-		u.bot.Send(m.Sender, err.Error())
+		u.explainError(m, "", err)
 		return
 	}
 

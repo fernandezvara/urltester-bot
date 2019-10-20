@@ -8,7 +8,7 @@ import (
 
 // start : response when the user makes the first connection to the bot
 // the client will send a /start on the first contact
-func (u *urlTester) start(m *tb.Message) {
+func (u *urlTester) start(m *tb.Message, returns []interface{}) {
 
 	u.saveHistory(m)
 

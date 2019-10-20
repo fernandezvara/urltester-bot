@@ -26,7 +26,7 @@ USER COMMANDS
 /settext <id> <text> - updates the expected text to be found on every monitor request
 /settimeout <id> <timeout> - updates the expected timeout to be found on every monitor request
 /setstatuscode <id> <statuscode> - updates the expected HTTP status code for the monitor
-/subscribe <id> - subscrives to monitor status
+/subscribe <id> - subscribes to monitor status
 /unsubscribe <id> - unsubscribes from monitor status
 /test <method> <url> <statuscode> - test a URL and its HTTP status
 /testfull <method> <url> <statuscode> - test a URL and its HTTP status, returning its data
@@ -127,9 +127,14 @@ GLOBAL OPTIONS:
 
 # Changes:
 
+0.3.1:
+
+- Payload refactor, payload operations are done on the handler instead of all commands code
+- Added '/command help' with a longer explanation for each command.
+
 0.3.0:
 
-- Problems now explain the failure
+- Problems now explain the failure that triggered the alert
 - Markdown messages updated
 
 0.2.1:

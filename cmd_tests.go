@@ -7,33 +7,27 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-func (u *urlTester) test(m *tb.Message) {
-	u.testURL(m, false)
+func (u *urlTester) test(m *tb.Message, returns []interface{}) {
+	u.testURL(m, false, returns)
 }
 
-func (u *urlTester) testFull(m *tb.Message) {
-	u.testURL(m, true)
+func (u *urlTester) testFull(m *tb.Message, returns []interface{}) {
+	u.testURL(m, true, returns)
 }
 
-func (u *urlTester) testURL(m *tb.Message, full bool) {
+func (u *urlTester) testURL(m *tb.Message, full bool, returns []interface{}) {
 
 	var (
 		headerString string
 		message      string
-		returns      []interface{}
-		method       string
-		urlString    string
-		statusCode   int
-		err          error
+
+		method     string
+		urlString  string
+		statusCode int
+		err        error
 	)
 
 	u.saveHistory(m)
-
-	returns, err = u.payloadReader(m.Text)
-	if err != nil {
-		u.bot.Send(m.Sender, err.Error())
-		return
-	}
 
 	method = returns[0].(string)
 	urlString = returns[1].(string)
@@ -42,7 +36,7 @@ func (u *urlTester) testURL(m *tb.Message, full bool) {
 	duration, body, headers, resultCode, _, _, _, expected, err := u.sendRequest(method, urlString, statusCode, "", "")
 	log.Println(method, urlString, statusCode, resultCode, expected, err)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error:\n%s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 

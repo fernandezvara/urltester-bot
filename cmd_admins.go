@@ -6,8 +6,8 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-// grantOrRevoke modifies the authorized status for a user
-func (u *urlTester) users(m *tb.Message) {
+// users returns current users of the bot and statuses
+func (u *urlTester) users(m *tb.Message, returns []interface{}) {
 
 	u.saveHistory(m)
 
@@ -18,7 +18,7 @@ func (u *urlTester) users(m *tb.Message) {
 
 	err = u.db.All(&users)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error: %s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 
@@ -29,7 +29,7 @@ func (u *urlTester) users(m *tb.Message) {
 			message = fmt.Sprintf("%s @%s", message, thisUser.Username)
 		}
 		if thisUser.Authorized {
-			message = fmt.Sprintf("%s *(autorized)*", message)
+			message = fmt.Sprintf("%s *(authorized)*", message)
 		}
 		if u.isUserAdmin(thisUser.ID) {
 			message = fmt.Sprintf("%s _(admin)_", message)
@@ -41,48 +41,42 @@ func (u *urlTester) users(m *tb.Message) {
 
 }
 
-func (u *urlTester) grant(m *tb.Message) {
+func (u *urlTester) grant(m *tb.Message, returns []interface{}) {
 
-	u.grantOrRevoke(m, true)
+	u.grantOrRevoke(m, true, returns)
 
 }
 
-func (u *urlTester) revoke(m *tb.Message) {
+func (u *urlTester) revoke(m *tb.Message, returns []interface{}) {
 
-	u.grantOrRevoke(m, false)
+	u.grantOrRevoke(m, false, returns)
 
 }
 
 // grantOrRevoke modifies the authorized status for a user
-func (u *urlTester) grantOrRevoke(m *tb.Message, action bool) {
+func (u *urlTester) grantOrRevoke(m *tb.Message, action bool, returns []interface{}) {
 
 	u.saveHistory(m)
 
 	var (
-		id      int
-		returns []interface{}
-		err     error
-		tgUser  user
-	)
+		id int
 
-	returns, err = u.payloadReader(m.Text)
-	if err != nil {
-		u.bot.Send(m.Sender, err.Error())
-		return
-	}
+		err    error
+		tgUser user
+	)
 
 	id = returns[0].(int)
 
 	err = u.db.One("ID", id, &tgUser)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error: %s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 
 	tgUser.Authorized = action
 	err = u.db.Save(&tgUser)
 	if err != nil {
-		u.bot.Send(m.Sender, fmt.Sprintf("There was an error: %s", err.Error()))
+		u.explainError(m, "", err)
 		return
 	}
 

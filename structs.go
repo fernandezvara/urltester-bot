@@ -13,7 +13,8 @@ import (
 
 // errors
 var (
-	errInvalidPayload = errors.New("invalid payload")
+	errInvalidPayload  = errors.New("invalid payload")
+	errCommandNotFound = errors.New("command not found")
 )
 
 // consts
@@ -38,14 +39,14 @@ const (
 )
 
 type command struct {
-	fn        func(m *tb.Message) // function to execute
-	noHelp    bool                // hide on help command
-	isPrivate bool                // command needs to be send privatelly to the bot
-	forUsers  bool                // must be user of the bot in order of been able to use it
-	forAdmins bool                // must be admin to use it
-	helpShort string              // short help text description
-	helpLong  string              // long help text
-	payload   []payloadPart       // payload parts and validations
+	fn        func(m *tb.Message, returns []interface{}) // function to execute
+	noHelp    bool                                       // hide on help command
+	isPrivate bool                                       // command needs to be send privatelly to the bot
+	forUsers  bool                                       // must be user of the bot in order of been able to use it
+	forAdmins bool                                       // must be admin to use it
+	helpShort string                                     // short help text description
+	helpLong  string                                     // long help text
+	payload   []payloadPart                              // payload parts and validations
 }
 
 type payloadPart struct {

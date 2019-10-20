@@ -207,8 +207,8 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		isPrivate: true,
 		forUsers:  true,
 		forAdmins: false,
-		helpShort: "subscrives to monitor status",
-		helpLong:  "subscrives to monitor status",
+		helpShort: "subscribes to monitor status",
+		helpLong:  "subscribes to monitor status",
 		payload: []payloadPart{
 			payloadPart{
 				arg:  "id",
