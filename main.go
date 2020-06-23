@@ -17,20 +17,22 @@ func main() {
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:   "telegram-token",
-			Usage:  "Telegram API token for the bot to work.",
-			EnvVar: "TELEGRAM_TOKEN",
+			Name:     "telegram-token",
+			Usage:    "(required) Telegram API token for the bot to work.",
+			EnvVar:   "TELEGRAM_TOKEN",
+			Required: true,
+		},
+		cli.IntSliceFlag{
+			Name:     "admins",
+			Usage:    "(required) Telegram UserIDs that can administer bot accesses.",
+			EnvVar:   "ADMINS",
+			Required: true,
 		},
 		cli.StringFlag{
 			Name:   "db-path",
 			Usage:  "Database path where to store user requests and statuses.",
 			EnvVar: "DB_PATH",
 			Value:  "./urltester.db",
-		},
-		cli.IntSliceFlag{
-			Name:   "admins",
-			Usage:  "Telegram UserIDs that can administer bot accesses.",
-			EnvVar: "ADMINS",
 		},
 	}
 

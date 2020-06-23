@@ -70,30 +70,30 @@ func (u *urlTester) executeMonitor(args []string) {
 	} else {
 
 		var message string
-		message = fmt.Sprintf("*PROBLEM*: (id:%d) \n%s [%s] (%d):\n\n", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus)
+		message = fmt.Sprintf("PROBLEM: (id:%d) \n%s [%s] (%d):\n\n", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus)
 
 		if err != nil {
-			message = fmt.Sprintf("%s*ERROR*: %s\n", message, err.Error())
+			message = fmt.Sprintf("%sERROR: %s\n", message, err.Error())
 		} else {
 			if !checkStatus {
-				message = fmt.Sprintf("%s*ERROR*: HTTP status received: %d\n", message, resultStatusCode)
+				message = fmt.Sprintf("%sERROR: HTTP status received: %d\n", message, resultStatusCode)
 			}
 			if !checkText {
-				message = fmt.Sprintf("%s*ERROR*: Text not found\n", message)
+				message = fmt.Sprintf("%sERROR: Text not found\n", message)
 			}
 			if !checkTimeout {
-				message = fmt.Sprintf("%s*ERROR*: Timeout exceed: %s\n", message, duration.String())
+				message = fmt.Sprintf("%sERROR: Timeout exceed: %s\n", message, duration.String())
 			}
 		}
 
 		if u.lastStatus[sched.ID].Status != statusDown {
 			_, _ = u.addTimelineEntry(sched.ID, statusDown)
 		} else {
-			message = fmt.Sprintf("%s\n*Downtime*: %s\n", message, secondsToHuman(time.Now().Unix()-u.lastStatus[sched.ID].Timestamp))
+			message = fmt.Sprintf("%s\nDowntime: %s\n", message, secondsToHuman(time.Now().Unix()-u.lastStatus[sched.ID].Timestamp))
 		}
 
 		for _, sub := range sched.Subscriptors {
-			u.bot.Send(telegramUser{id: sub}, message, tb.NoPreview, tb.ModeMarkdown)
+			u.bot.Send(telegramUser{id: sub}, message, tb.NoPreview)
 		}
 
 	}
