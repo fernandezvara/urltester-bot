@@ -59,13 +59,13 @@ func (u *urlTester) grantOrRevoke(m *tb.Message, action bool, returns []interfac
 	u.saveHistory(m)
 
 	var (
-		id int
+		id int64
 
 		err    error
 		tgUser user
 	)
 
-	id = returns[0].(int)
+	id = returns[0].(int64)
 
 	err = u.db.One("ID", id, &tgUser)
 	if err != nil {
@@ -80,7 +80,7 @@ func (u *urlTester) grantOrRevoke(m *tb.Message, action bool, returns []interfac
 		return
 	}
 
-	if action == true {
+	if action {
 		u.bot.Send(m.Sender, "Permissions granted")
 		u.bot.Send(telegramUser{id}, "Permissions granted\nUse /help to know the bot allowed actions.")
 		return

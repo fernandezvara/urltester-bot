@@ -65,13 +65,13 @@ func (u *urlTester) help(m *tb.Message, returns []interface{}) {
 		// build all commands message
 		for key, value := range u.commands {
 			if !value.noHelp {
-				if value.forUsers == false && value.forAdmins == false {
+				if !value.forUsers && !value.forAdmins {
 					anonMessage = fmt.Sprintf("%s%s %s - %s\n", anonMessage, key, u.argsToString(value.payload), value.helpShort)
 				}
-				if value.forUsers == true && value.forAdmins == false {
+				if value.forUsers && !value.forAdmins {
 					usersMessage = fmt.Sprintf("%s%s %s - %s\n", usersMessage, key, u.argsToString(value.payload), value.helpShort)
 				}
-				if value.forAdmins == true {
+				if value.forAdmins {
 					adminsMessage = fmt.Sprintf("%s%s %s - %s\n", adminsMessage, key, u.argsToString(value.payload), value.helpShort)
 				}
 			}
@@ -83,7 +83,7 @@ func (u *urlTester) help(m *tb.Message, returns []interface{}) {
 `, anonMessage)
 
 		// users commands
-		if u.accessGranted(m.Sender) == true {
+		if u.accessGranted(m.Sender) {
 			message = fmt.Sprintf(`%s*USER COMMANDS*
 %s
 `, message, usersMessage)

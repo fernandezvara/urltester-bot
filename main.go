@@ -27,7 +27,7 @@ func main() {
 			EnvVar: "DB_PATH",
 			Value:  "./urltester.db",
 		},
-		cli.IntSliceFlag{
+		cli.Int64SliceFlag{
 			Name:   "admins",
 			Usage:  "Telegram UserIDs that can administer bot accesses.",
 			EnvVar: "ADMINS",
@@ -48,7 +48,7 @@ func startAPI(c *cli.Context) error {
 	tester := urlTester{
 		token:  c.GlobalString("telegram-token"),
 		dbpath: c.GlobalString("db-path"),
-		admins: c.GlobalIntSlice("admins"),
+		admins: c.GlobalInt64Slice("admins"),
 	}
 
 	return tester.botstart()

@@ -69,7 +69,7 @@ func secondsToHuman(input int64) (result string) {
 	return
 }
 
-func alreadyOnIntArray(arr []int, value int) bool {
+func alreadyOnIntArray(arr []int64, value int64) bool {
 
 	for _, v := range arr {
 		if v == value {
@@ -104,7 +104,7 @@ func arrStringToString(arr []string) (message string) {
 	return
 }
 
-func removeFromIntArray(arr []int, value int) (newArr []int) {
+func removeFromIntArray(arr []int64, value int64) (newArr []int64) {
 
 	for _, v := range arr {
 		if v != value {
@@ -137,15 +137,10 @@ func (u *urlTester) accessGranted(tbUser *tb.User) (authorized bool) {
 
 }
 
-func (u *urlTester) userInfo(id int) (tgUser user, authorized bool) {
+func (u *urlTester) userInfo(id int64) (tgUser user, authorized bool) {
 
-	var (
-		err error
-	)
-
-	err = u.db.One("ID", id, &tgUser)
 	// on error user will be unauthorized (if the user didn't /start'ed)
-	if err != nil {
+	if err := u.db.One("ID", id, &tgUser); err != nil {
 		u.bot.Send(telegramUser{id}, "Access not allowed. \nPlease use /start to ask for permissions.")
 		return
 	}
@@ -156,7 +151,7 @@ func (u *urlTester) userInfo(id int) (tgUser user, authorized bool) {
 }
 
 // isUserAdmin returns if the current user is allowed as administrator
-func (u *urlTester) isUserAdmin(id int) bool {
+func (u *urlTester) isUserAdmin(id int64) bool {
 
 	for _, adminID := range u.admins {
 		if adminID == id {
@@ -168,7 +163,7 @@ func (u *urlTester) isUserAdmin(id int) bool {
 
 }
 
-func (u *urlTester) sendMessageAndNotifyAdmins(userID int, message string) {
+func (u *urlTester) sendMessageAndNotifyAdmins(userID int64, message string) {
 
 	log.Println(userID, ":", message)
 	u.bot.Send(telegramUser{userID}, message)

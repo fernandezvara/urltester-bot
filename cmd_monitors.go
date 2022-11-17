@@ -213,7 +213,7 @@ func (u *urlTester) newmonitor(m *tb.Message, returns []interface{}) {
 	sched.URL = urlString
 	sched.ExpectedStatus = statusCode
 	sched.Every = interval
-	sched.Subscriptors = []int{m.Sender.ID}
+	sched.Subscriptors = []int64{m.Sender.ID}
 
 	err = u.db.Save(&sched)
 	if err != nil {
@@ -272,8 +272,8 @@ func (u *urlTester) remove(m *tb.Message, returns []interface{}) {
 
 	// notify suscribers about this removal
 	for subscriptor := range sched.Subscriptors {
-		if subscriptor != m.Sender.ID {
-			u.bot.Send(telegramUser{subscriptor}, fmt.Sprintf("Monitor %d was removed by its owner. Settings:\nMethod: %s\nURL: %s\nExpected HTTP status: %d\nInterval: %s\n", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, sched.Every), tb.NoPreview)
+		if int64(subscriptor) != m.Sender.ID {
+			u.bot.Send(telegramUser{int64(subscriptor)}, fmt.Sprintf("Monitor %d was removed by its owner. Settings:\nMethod: %s\nURL: %s\nExpected HTTP status: %d\nInterval: %s\n", sched.ID, sched.Method, sched.URL, sched.ExpectedStatus, sched.Every), tb.NoPreview)
 		}
 	}
 
