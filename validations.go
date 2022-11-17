@@ -50,7 +50,7 @@ func (u *urlTester) payloadReader(text string) (cmdString string, returns []inte
 			// validate input
 			if len(expects[index].valid) > 0 {
 				if !alreadyOnStringArray(expects[index].valid, strings.ToUpper(part)) {
-					err = fmt.Errorf("Error: Key '%s': '%s' not valid.\n Allowed values: [%s]", expects[index].arg, part, arrStringToString(expects[index].valid))
+					err = fmt.Errorf("error: Key '%s': '%s' not valid.\n Allowed values: [%s]", expects[index].arg, part, arrStringToString(expects[index].valid))
 					return
 				}
 			}
@@ -64,7 +64,7 @@ func (u *urlTester) payloadReader(text string) (cmdString string, returns []inte
 			var ok bool
 			_, _, ok = evaluateTimeExp(part)
 			if !ok {
-				err = fmt.Errorf("Error: Key '%s': '%s' not a valid time interval expression.\n Example: '1m' for 1 minute\n Allowed values: \n - s: seconds\n - m: minutes\n - h: hours", expects[index].arg, part)
+				err = fmt.Errorf("error: Key '%s': '%s' not a valid time interval expression.\n Example: '1m' for 1 minute\n Allowed values: \n - s: seconds\n - m: minutes\n - h: hours", expects[index].arg, part)
 				return
 			}
 
@@ -76,7 +76,7 @@ func (u *urlTester) payloadReader(text string) (cmdString string, returns []inte
 			var intValue int
 			intValue, err = strconv.Atoi(part)
 			if err != nil {
-				err = fmt.Errorf("Error: Key '%s': '%s' is not a int value", expects[index].arg, part)
+				err = fmt.Errorf("error: Key '%s': '%s' is not a int value", expects[index].arg, part)
 				return
 			}
 
@@ -93,7 +93,7 @@ func (u *urlTester) payloadReader(text string) (cmdString string, returns []inte
 			case "false":
 				// do not make anything, it's already false
 			default:
-				err = fmt.Errorf("Error: Key '%s': '%s' is not a boolean value", expects[index].arg, part)
+				err = fmt.Errorf("error: Key '%s': '%s' is not a boolean value", expects[index].arg, part)
 				return
 			}
 

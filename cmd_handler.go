@@ -30,22 +30,22 @@ func (u *urlTester) handler(m *tb.Message) {
 	cmd := u.commands[cmdString]
 
 	// check if command is private
-	if cmd.isPrivate == true {
+	if cmd.isPrivate {
 		if !m.Private() {
 			return
 		}
 	}
 
 	// check if command can be executed anonymously or not
-	if cmd.forUsers == true {
-		if u.accessGranted(m.Sender) == false {
+	if cmd.forUsers {
+		if !u.accessGranted(m.Sender) {
 			return
 		}
 	}
 
 	// check if command must be executed by an admin
-	if cmd.forAdmins == true {
-		if u.isUserAdmin(m.Sender.ID) == false {
+	if cmd.forAdmins {
+		if !u.isUserAdmin(m.Sender.ID) {
 			return
 		}
 	}

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -169,7 +169,7 @@ func (u *urlTester) sendRequest(method, url string, expectedStatus int, text, ti
 
 	// body
 	defer res.Body.Close()
-	bodyBytes, err := ioutil.ReadAll(res.Body)
+	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return
 	}
@@ -185,7 +185,7 @@ func (u *urlTester) sendRequest(method, url string, expectedStatus int, text, ti
 	}
 
 	httpStatus = res.StatusCode
-	duration = time.Now().Sub(start)
+	duration = time.Since(start)
 
 	// expectedStatus ok
 	checkStatus = expectedStatus == res.StatusCode

@@ -73,28 +73,28 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		helpShort: "creates a new monitor with basic monitor settings",
 		helpLong:  "creates a new monitor with basic monitor settings",
 		payload: []payloadPart{
-			payloadPart{
+			{
 				arg:   "method",
 				typ:   typeString,
 				help:  helpMethod,
 				valid: allowedMethods,
 			},
-			payloadPart{
+			{
 				arg:  "url",
 				typ:  typeString,
 				help: helpURL,
 			},
-			payloadPart{
+			{
 				arg:  "statuscode",
 				typ:  typeInt,
 				help: helpStatusCode,
 			},
-			payloadPart{
+			{
 				arg:  "interval",
 				typ:  typeTimeExp,
 				help: helpInterval,
 			},
-			payloadPart{
+			{
 				arg:  "private",
 				typ:  typeBool,
 				help: helpPrivate,
@@ -110,7 +110,7 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		helpShort: "removes a monitor",
 		helpLong:  "removes a monitor",
 		payload: []payloadPart{
-			payloadPart{
+			{
 				arg:  "id",
 				typ:  typeInt,
 				help: helpMonitorID,
@@ -126,12 +126,12 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		helpShort: "updates the interval between monitor calls",
 		helpLong:  "updates the interval between monitor calls",
 		payload: []payloadPart{
-			payloadPart{
+			{
 				arg:  "id",
 				typ:  typeInt,
 				help: helpMonitorID,
 			},
-			payloadPart{
+			{
 				arg:  "interval",
 				typ:  typeTimeExp,
 				help: helpInterval,
@@ -147,12 +147,12 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		helpShort: "updates the expected HTTP status code for the monitor",
 		helpLong:  "updates the expected HTTP status code for the monitor",
 		payload: []payloadPart{
-			payloadPart{
+			{
 				arg:  "id",
 				typ:  typeInt,
 				help: helpMonitorID,
 			},
-			payloadPart{
+			{
 				arg:  "statuscode",
 				typ:  typeInt,
 				help: helpStatusCode,
@@ -168,12 +168,12 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		helpShort: "updates the expected text to be found on every monitor request",
 		helpLong:  "updates the expected text to be found on every monitor request",
 		payload: []payloadPart{
-			payloadPart{
+			{
 				arg:  "id",
 				typ:  typeInt,
 				help: helpMonitorID,
 			},
-			payloadPart{
+			{
 				arg:  "text",
 				typ:  typeString,
 				help: helpText,
@@ -189,12 +189,12 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		helpShort: "updates the expected timeout to be found on every monitor request",
 		helpLong:  "updates the expected timeout to be found on every monitor request",
 		payload: []payloadPart{
-			payloadPart{
+			{
 				arg:  "id",
 				typ:  typeInt,
 				help: helpMonitorID,
 			},
-			payloadPart{
+			{
 				arg:  "timeout",
 				typ:  typeTimeExp,
 				help: helpTimeout,
@@ -210,7 +210,7 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		helpShort: "subscribes to monitor status",
 		helpLong:  "subscribes to monitor status",
 		payload: []payloadPart{
-			payloadPart{
+			{
 				arg:  "id",
 				typ:  typeInt,
 				help: helpMonitorID,
@@ -226,7 +226,7 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		helpShort: "unsubscribes from monitor status",
 		helpLong:  "unsubscribes from monitor status",
 		payload: []payloadPart{
-			payloadPart{
+			{
 				arg:  "id",
 				typ:  typeInt,
 				help: helpMonitorID,
@@ -242,18 +242,18 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		helpShort: "test a URL and its HTTP status",
 		helpLong:  "test a URL and its HTTP status",
 		payload: []payloadPart{
-			payloadPart{
+			{
 				arg:   "method",
 				typ:   typeString,
 				help:  helpMethod,
 				valid: allowedMethods,
 			},
-			payloadPart{
+			{
 				arg:  "url",
 				typ:  typeString,
 				help: helpURL,
 			},
-			payloadPart{
+			{
 				arg:  "statuscode",
 				typ:  typeInt,
 				help: helpURL,
@@ -269,18 +269,18 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		helpShort: "test a URL and its HTTP status, returning its data",
 		helpLong:  "test a URL and its HTTP status, returning its data",
 		payload: []payloadPart{
-			payloadPart{
+			{
 				arg:   "method",
 				typ:   typeString,
 				help:  helpMethod,
 				valid: allowedMethods,
 			},
-			payloadPart{
+			{
 				arg:  "url",
 				typ:  typeString,
 				help: helpURL,
 			},
-			payloadPart{
+			{
 				arg:  "statuscode",
 				typ:  typeInt,
 				help: helpURL,
@@ -306,7 +306,7 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		helpShort: "grants access to a user",
 		helpLong:  "grants access to a user",
 		payload: []payloadPart{
-			payloadPart{
+			{
 				arg:  "id",
 				typ:  typeInt,
 				help: helpMonitorID,
@@ -322,7 +322,7 @@ func (u *urlTester) buildCommands() (commands map[string]command) {
 		helpShort: "revokes access to a user",
 		helpLong:  "revokes access to a user",
 		payload: []payloadPart{
-			payloadPart{
+			{
 				arg:  "id",
 				typ:  typeInt,
 				help: helpMonitorID,

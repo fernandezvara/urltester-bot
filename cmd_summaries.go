@@ -9,7 +9,7 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-func (u *urlTester) visibleMonitors(userID int) (scheds []schedule, err error) {
+func (u *urlTester) visibleMonitors(userID int64) (scheds []schedule, err error) {
 
 	query := u.db.Select(q.Or(
 		q.And(q.Eq("UserID", userID), q.Eq("Private", true)),
@@ -73,7 +73,7 @@ func (u *urlTester) monitors(m *tb.Message, returns []interface{}) {
 		} else {
 			message = fmt.Sprintf("%s%d - %s [%s] (%d)", message, sched.ID, sched.Method, sched.URL, sched.ExpectedStatus)
 		}
-		if alreadyOnIntArray(sched.Subscriptors, m.Sender.ID) == true {
+		if alreadyOnIntArray(sched.Subscriptors, m.Sender.ID) {
 			message = fmt.Sprintf("%s *(subscribed)*", message)
 		}
 		message = fmt.Sprintf("%s\n", message)

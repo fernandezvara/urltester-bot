@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"strconv"
+	"fmt"
 	"sync"
 	"time"
 
@@ -65,26 +65,26 @@ type urlTester struct {
 	schedules  map[int]*scheduler.Job
 	lastStatus map[int]timeline
 	commands   map[string]command
-	admins     []int
+	admins     []int64
 	sync.RWMutex
 }
 
 // schedule is the definition of a recurrent monitoring job
 type schedule struct {
-	ID              int    `json:"id" storm:"id,increment"`
-	UserID          int    `json:"user_id" storm:"index"`
-	Private         bool   `json:"private" storm:"index"`
-	Method          string `json:"method" storm:"index"`
-	URL             string `json:"url" storm:"index"`
-	ExpectedStatus  int    `json:"expected_status,omitempty"`
-	ExpectedText    string `json:"expected_text,omitempty"`
-	ExpectedTimeout string `json:"expected_timeout,omitempty"`
-	Every           string `json:"every"`
-	Subscriptors    []int  `json:"subscriptors"`
+	ID              int     `json:"id" storm:"id,increment"`
+	UserID          int64   `json:"user_id" storm:"index"`
+	Private         bool    `json:"private" storm:"index"`
+	Method          string  `json:"method" storm:"index"`
+	URL             string  `json:"url" storm:"index"`
+	ExpectedStatus  int     `json:"expected_status,omitempty"`
+	ExpectedText    string  `json:"expected_text,omitempty"`
+	ExpectedTimeout string  `json:"expected_timeout,omitempty"`
+	Every           string  `json:"every"`
+	Subscriptors    []int64 `json:"subscriptors"`
 }
 
 type user struct {
-	ID           int    `json:"id" storm:"id"`
+	ID           int64  `json:"id" storm:"id"`
 	FirstName    string `json:"first_name"`
 	LastName     string `json:"last_name"`
 	Username     string `json:"username"`
@@ -97,7 +97,7 @@ type user struct {
 type history struct {
 	ID      int       `json:"id" storm:"id,increment"`
 	When    time.Time `json:"when"`
-	UserID  int       `json:"user_id" storm:"index"`
+	UserID  int64     `json:"user_id" storm:"index"`
 	Message string    `json:"message"`
 }
 
@@ -108,16 +108,16 @@ type timeline struct {
 	Timestamp int64 `json:"timestamp"`
 	Status    int   `json:"status" storm:"index"`
 	Downtime  int64 `json:"downtime"`
-	duration  time.Duration
-	body      string
-	headers   map[string]string
+	// duration  time.Duration
+	// body      string
+	// headers   map[string]string
 }
 
 // telegramUser uses the same interface than *tb.User
 type telegramUser struct {
-	id int
+	id int64
 }
 
 func (t telegramUser) Recipient() string {
-	return strconv.Itoa(t.id)
+	return fmt.Sprintf("%d", t.id)
 }
